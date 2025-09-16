@@ -109,6 +109,18 @@ services:
     networks:
       - app-net
 
+  apm-server:
+    image: docker.elastic.co/apm/apm-server:7.17.26
+    container_name: apm-server
+    environment:
+      - output.elasticsearch.hosts=["http://elasticsearch:9200"]
+      - apm-server.kibana.enabled=true
+      - apm-server.kibana.host=http://kibana:5601
+    ports:
+      - "8200:8200"
+    depends_on: [elasticsearch, kibana]
+    networks: [app-net]
+
   portainer:
     image: portainer/portainer-ce:latest
     container_name: portainer
@@ -124,6 +136,8 @@ services:
     # Pas besoin de 'command:' (par défaut Portainer parle au socket monté)
     networks:
       - app-net
+
+
 
 volumes:
   db_data:

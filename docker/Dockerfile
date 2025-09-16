@@ -42,8 +42,20 @@ RUN apt-get install -y \
     curl \
     jq
 
+# ===================================================
+# Elastic APM PHP agent
+# ===================================================
+ARG ELASTIC_APM_PHP_VERSION=1.15.1
+RUN apt-get update && apt-get install -y curl libcurl4 ca-certificates \
+ && curl -fsSL -o /tmp/apm-agent-php.deb \
+    https://github.com/elastic/apm-agent-php/releases/download/v1.15.1/apm-agent-php_1.15.1_amd64.deb \
+ && dpkg -i /tmp/apm-agent-php.deb || apt-get -f install -y \
+ && rm /tmp/apm-agent-php.deb
+
 
 RUN rm -rf /var/lib/apt/lists/*
+
+
 
 
 # ===================================================
@@ -75,6 +87,12 @@ COPY php/opcache.ini /etc/php/8.4/cli/conf.d/99-opcache.ini
 COPY php/opcache.ini /etc/php/7.4/fpm/conf.d/99-opcache.ini
 COPY php/opcache.ini /etc/php/7.4/cli/conf.d/99-opcache.ini
 
+COPY php/elastic_apm.ini /etc/php/8.4/fpm/conf.d/20-elastic_apm.ini
+COPY php/elastic_apm.ini /etc/php/8.4/cli/conf.d/20-elastic_apm.ini
+COPY php/elastic_apm.ini /etc/php/7.4/fpm/conf.d/20-elastic_apm.ini
+COPY php/elastic_apm.ini /etc/php/7.4/cli/conf.d/20-elastic_apm.ini
+
+
 # ===================================================
 # Apache Configuration
 # ===================================================
@@ -85,8 +103,6 @@ RUN a2ensite myurgo.conf && a2dissite 000-default.conf \
  && a2dismod php7.* php8.* || true
 
 RUN git config --global --add safe.directory /var/www/html
-
-
 
 # ===================================================
 # USER PROFILE
