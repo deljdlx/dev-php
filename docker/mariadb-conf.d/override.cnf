@@ -1,0 +1,3 @@
+[mysqld]
+# Listen on all interfaces
+bind-address=0.0.0.0
