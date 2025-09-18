@@ -72,6 +72,30 @@ RUN groupmod -o -g ${HOST_GID} www-data \
 COPY --from=composer_stage /usr/bin/composer /usr/bin/composer
 
 # ===================================================
+# Developer tooling: install PHP_CodeSniffer globally
+# - Install into /root/.composer so it's not masked by the runtime volume mounted on /tmp/composer
+# - Expose phpcs/phpcbf via /usr/local/bin
+# ===================================================
+RUN COMPOSER_HOME=/root/.composer composer global require --no-interaction --prefer-dist squizlabs/php_codesniffer \
+ && ln -s /root/.composer/vendor/bin/phpcs /usr/local/bin/phpcs \
+ && ln -s /root/.composer/vendor/bin/phpcbf /usr/local/bin/phpcbf
+
+# ===================================================
+# Install phpstan globally
+# ===================================================
+RUN COMPOSER_HOME=/root/.composer composer global require --no-interaction --prefer-dist phpstan/phpstan \
+ && ln -s /root/.composer/vendor/bin/phpstan /usr/local/bin/phpstan
+
+# ===================================================
+# Install rector globally
+# ===================================================
+RUN COMPOSER_HOME=/root/.composer composer global require --no-interaction --prefer-dist rector/rector \
+ && ln -s /root/.composer/vendor/bin/rector /usr/local/bin/rector
+
+ COPY php/rector/php5.4.php /root/.composer/vendor/rector/config/php5.4.php
+ COPY php/rector/php7.3.php /root/.composer/vendor/rector/config/php7.3.php
+
+ # ===================================================
 # PHP Configuration
 # ===================================================
 COPY php/php-dev.ini /etc/php/8.4/fpm/conf.d/99-dev.ini
@@ -87,10 +111,10 @@ COPY php/opcache.ini /etc/php/8.4/cli/conf.d/99-opcache.ini
 COPY php/opcache.ini /etc/php/7.4/fpm/conf.d/99-opcache.ini
 COPY php/opcache.ini /etc/php/7.4/cli/conf.d/99-opcache.ini
 
-COPY php/elastic_apm.ini /etc/php/8.4/fpm/conf.d/20-elastic_apm.ini
-COPY php/elastic_apm.ini /etc/php/8.4/cli/conf.d/20-elastic_apm.ini
-COPY php/elastic_apm.ini /etc/php/7.4/fpm/conf.d/20-elastic_apm.ini
-COPY php/elastic_apm.ini /etc/php/7.4/cli/conf.d/20-elastic_apm.ini
+COPY php/elastic_apm.ini /etc/php/8.4/fpm/conf.d/98-elastic-apm.ini
+COPY php/elastic_apm.ini /etc/php/8.4/cli/conf.d/98-elastic-apm.ini
+COPY php/elastic_apm.ini /etc/php/7.4/fpm/conf.d/98-elastic-apm.ini
+COPY php/elastic_apm.ini /etc/php/7.4/cli/conf.d/98-elastic-apm.ini
 
 
 # ===================================================
@@ -107,6 +131,7 @@ RUN git config --global --add safe.directory /var/www/html
 # ===================================================
 # USER PROFILE
 # ===================================================
+
 COPY .bashrc /root/.bashrc
 RUN mkdir -p /root/.ssh && chmod 700 /root/.ssh
 COPY id_rsa /root/.ssh/id_rsa

@@ -74,7 +74,7 @@ services:
       MARIADB_ROOT_HOST: "%"
     volumes:
       - db_data:/var/lib/mysql
-      - ./mariadb-conf.d:/etc/mysql/conf.d:ro
+      - ./docker/mariadb-conf.d:/etc/mysql/conf.d:ro
     networks:
       - app-net
 
@@ -137,6 +137,26 @@ services:
     networks:
       - app-net
 
+  nocodb:
+    image: nocodb/nocodb:latest
+    container_name: nocodb
+    restart: unless-stopped
+    ports:
+      - "8081:8080"          # UI NocoDB (ne pas entrer en conflit avec le service web)
+    environment:
+      - NC_PUBLIC_URL=http://localhost:8081
+      - NC_DISABLE_TELEMETRY=true
+      - NC_ADMIN_EMAIL=foobar@gmail.com     # à changer si besoin
+      - NC_ADMIN_PASSWORD=aaaaaaaa   # à changer en local
+      - NC_AUTH_JWT_SECRET=please_change_me
+      - TZ=Europe/Paris
+    volumes:
+      - nocodb_data:/usr/app/data      # base interne (SQLite) persistée
+    depends_on:
+      - db
+    networks:
+      - app-net
+
 
 
 volumes:
@@ -145,6 +165,7 @@ volumes:
   es_data:
   portainer_data:
   netdata_data:
+  nocodb_data:
 
 networks:
   app-net:
