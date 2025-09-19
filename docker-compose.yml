@@ -1,4 +1,34 @@
 services:
+  traefik:
+    image: traefik:v3.1
+    container_name: traefik
+    command:
+      - --api.dashboard=true
+      - --api.insecure=true
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --entrypoints.web.address=:80
+      # Pour HTTPS local avec mkcert, décommentez ci-dessous et ajoutez certs:
+      # - --entrypoints.websecure.address=:443
+      # - --certificatesresolvers.dev.acme.tlschallenge=true
+      # - --certificatesresolvers.dev.acme.email=you@example.com
+      # - --certificatesresolvers.dev.acme.storage=/letsencrypt/acme.json
+    ports:
+      - "80:80"
+      # - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # - ./letsencrypt:/letsencrypt
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.traefik.rule=Host(`traefik.localhost`)
+      - traefik.http.routers.traefik.entrypoints=web
+      - traefik.http.routers.traefik.service=api@internal
+      # - traefik.http.routers.traefik.tls=true
+      # - traefik.http.routers.traefik.tls.certresolver=dev
+    networks:
+      - app-net
+
   web:
     # profiles: ["php8"]
     build:
@@ -30,6 +60,14 @@ services:
       - elasticsearch
     networks:
       - app-net
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=app-net
+      - traefik.http.routers.web.rule=Host(`web.localhost`)
+      - traefik.http.routers.web.entrypoints=web
+      # - traefik.http.routers.web.tls=true
+      # - traefik.http.routers.web.tls.certresolver=dev
+      - traefik.http.services.web.loadbalancer.server.port=80
 
   mailhog:
     image: mailhog/mailhog
@@ -39,6 +77,14 @@ services:
       - "8025:8025"   # UI Web
     networks:
       - app-net
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=app-net
+      - traefik.http.routers.mailhog.rule=Host(`mailhog.localhost`)
+      - traefik.http.routers.mailhog.entrypoints=web
+      # - traefik.http.routers.mailhog.tls=true
+      - traefik.http.services.mailhog.loadbalancer.server.port=8025
+
   netdata:
     image: netdata/netdata:latest
     container_name: netdata
@@ -57,7 +103,13 @@ services:
     restart: unless-stopped
     networks:
       - app-net
-
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=app-net
+      - traefik.http.routers.netdata.rule=Host(`netdata.localhost`)
+      - traefik.http.routers.netdata.entrypoints=web
+      # - traefik.http.routers.netdata.tls=true
+      - traefik.http.services.netdata.loadbalancer.server.port=19999
 
   db:
     image: mariadb:11
@@ -96,6 +148,13 @@ services:
       - "9200:9200"
     networks:
       - app-net
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=app-net
+      - traefik.http.routers.elasticsearch.rule=Host(`es.localhost`)
+      - traefik.http.routers.elasticsearch.entrypoints=web
+      # - traefik.http.routers.elasticsearch.tls=true
+      - traefik.http.services.elasticsearch.loadbalancer.server.port=9200
 
   kibana:
     image: docker.elastic.co/kibana/kibana:7.17.26
@@ -108,6 +167,13 @@ services:
       - elasticsearch
     networks:
       - app-net
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=app-net
+      - traefik.http.routers.kibana.rule=Host(`kibana.localhost`)
+      - traefik.http.routers.kibana.entrypoints=web
+      # - traefik.http.routers.kibana.tls=true
+      - traefik.http.services.kibana.loadbalancer.server.port=5601
 
   apm-server:
     image: docker.elastic.co/apm/apm-server:7.17.26
@@ -120,6 +186,13 @@ services:
       - "8200:8200"
     depends_on: [elasticsearch, kibana]
     networks: [app-net]
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=app-net
+      - traefik.http.routers.apm.rule=Host(`apm.localhost`)
+      - traefik.http.routers.apm.entrypoints=web
+      # - traefik.http.routers.apm.tls=true
+      - traefik.http.services.apm.loadbalancer.server.port=8200
 
   portainer:
     image: portainer/portainer-ce:latest
@@ -131,33 +204,44 @@ services:
       - ADMIN_USERNAME=admin
       - ADMIN_PASSWORD=aaaaaaaaaaaa
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock   # <— MONTER le socket
-      - portainer_data:/data                        # <— données persistées
-    # Pas besoin de 'command:' (par défaut Portainer parle au socket monté)
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
     networks:
       - app-net
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=app-net
+      - traefik.http.routers.portainer.rule=Host(`portainer.localhost`)
+      - traefik.http.routers.portainer.entrypoints=web
+      # - traefik.http.routers.portainer.tls=true
+      - traefik.http.services.portainer.loadbalancer.server.port=9000
 
   nocodb:
     image: nocodb/nocodb:latest
     container_name: nocodb
     restart: unless-stopped
     ports:
-      - "8081:8080"          # UI NocoDB (ne pas entrer en conflit avec le service web)
+      - "8081:8080"
     environment:
       - NC_PUBLIC_URL=http://localhost:8081
       - NC_DISABLE_TELEMETRY=true
-      - NC_ADMIN_EMAIL=foobar@gmail.com     # à changer si besoin
-      - NC_ADMIN_PASSWORD=aaaaaaaa   # à changer en local
+      - NC_ADMIN_EMAIL=foobar@gmail.com
+      - NC_ADMIN_PASSWORD=aaaaaaaa
       - NC_AUTH_JWT_SECRET=please_change_me
       - TZ=Europe/Paris
     volumes:
-      - nocodb_data:/usr/app/data      # base interne (SQLite) persistée
+      - nocodb_data:/usr/app/data
     depends_on:
       - db
     networks:
       - app-net
-
-
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=app-net
+      - traefik.http.routers.nocodb.rule=Host(`nocodb.localhost`)
+      - traefik.http.routers.nocodb.entrypoints=web
+      # - traefik.http.routers.nocodb.tls=true
+      - traefik.http.services.nocodb.loadbalancer.server.port=8080
 
 volumes:
   db_data:
