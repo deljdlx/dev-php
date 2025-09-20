@@ -65,9 +65,10 @@ services:
       - traefik.docker.network=app-net
       - traefik.http.routers.web.rule=Host(`web.localhost`)
       - traefik.http.routers.web.entrypoints=web
+      - traefik.http.routers.web.service=web
+      - traefik.http.services.web.loadbalancer.server.port=80
       # - traefik.http.routers.web.tls=true
       # - traefik.http.routers.web.tls.certresolver=dev
-      - traefik.http.services.web.loadbalancer.server.port=80
       # Second site: monitor.localhost routed to same container
       - traefik.http.routers.monitor.rule=Host(`monitor.localhost`)
       - traefik.http.routers.monitor.entrypoints=web
