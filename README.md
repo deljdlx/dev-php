@@ -75,3 +75,19 @@ You should see documents in the `app-logs-*` indices. In Kibana, create a data v
 - `depends_on` does not wait for services to be "ready"; if your app starts before Elasticsearch is up, add a simple retry in your bootstrap or use a healthcheck/wait script.
 - Java heap is set to 512m for Elasticsearch via `ES_JAVA_OPTS`. Increase if needed.
 - Data is persisted under the `es_data` Docker volume.
+
+## Laravel + Filament demo
+
+- App path: `src/laravel`
+- URL: http://web.localhost/
+- Filament admin: http://web.localhost/admin
+
+Seeded login:
+- Email: admin@example.com
+- Password: password
+
+Run artisan inside the container:
+
+```bash
+docker compose exec -u www-data web bash -lc 'cd /var/www/html/laravel && php artisan migrate'
+```

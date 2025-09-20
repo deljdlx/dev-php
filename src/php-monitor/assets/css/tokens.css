@@ -1,0 +1,47 @@
+/* Design tokens (colors, typography, spacing, layout, radii, shadows, components) */
+:root{
+  /* Colors */
+  --bg:#0b0f19; --bg2:#0e1422; --fg:#f2f5f9; --muted:#c0c9d6; --card:#121a2e;
+  --primary:#38bdf8; --ok:#34d399; --fail:#f87171; --border:#3b4a63;
+  --codebg:#0f172a; --codeborder:#334155; --heading:#ffffff;
+  --shadow-col: rgba(2,6,23,.45);
+  --grad1: #38bdf81e; --grad2:#34d3991e;
+
+  /* Typography */
+  --font-sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+  --font-size: 17px;
+  --line-height: 1.6;
+  --weight-bold: 800;
+
+  /* Spacing scale */
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-5: 20px; --space-6: 24px; --space-8: 32px; --space-10: 40px;
+
+  /* Layout */
+  --container-max: 1100px;
+  --grid-gap: 16px; --grid-min: 320px;
+  --kv-key-w: 180px;
+
+  /* Radii & borders */
+  --radius-sm: 6px; --radius-md: 10px; --radius-lg: 14px; --radius-pill: 999px;
+  --border-w: 1px;
+
+  /* Shadows */
+  --shadow-1: 0 10px 30px var(--shadow-col);
+  --shadow-2: 0 30px 60px var(--shadow-col);
+
+  /* Components */
+  --heading-pad-y: 14px; --heading-pad-x: 16px;
+  --card-pad: 16px;
+  --btn-pad-y: 6px; --btn-pad-x: 10px;
+  --input-pad-y: 8px; --input-pad-x: 10px; --input-minw: 260px;
+  --code-pad: 10px;
+  --btn-bg0: #ffffff10; --btn-bg1:#00000010;
+}
+
+@media (prefers-color-scheme: light){
+  :root{
+    --bg:#f7fafc; --bg2:#eef2f7; --fg:#0b1320; --muted:#334155; --card:#ffffff;
+    --border:#cbd5e1; --codebg:#f8fafc; --codeborder:#e2e8f0; --heading:#0b1320;
+    --shadow-col: rgba(2,6,23,.08);
+  }
+}

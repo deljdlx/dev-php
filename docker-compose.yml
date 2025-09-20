@@ -40,14 +40,14 @@ services:
     ports:
       - "8080:80"
     volumes:
-      - ../urgo:/var/www/html
-      - ../urgo/tmp/xdebug-traces:/var/www/html/tmp/xdebug-traces
+      - ./src:/var/www/html
+      - ./src/tmp/xdebug-traces:/var/www/html/tmp/xdebug-traces
       - composer_cache:/tmp/composer
     working_dir: /var/www/html
     environment:
       COMPOSER_HOME: /tmp/composer
       MYSQL_HOST: db
-      MYSQL_DATABASE: myurgo
+      MYSQL_DATABASE: dev
       MYSQL_USER: root
       MYSQL_PASSWORD: rootpass
       MARIADB_ROOT_PASSWORD: rootpass
@@ -68,6 +68,11 @@ services:
       # - traefik.http.routers.web.tls=true
       # - traefik.http.routers.web.tls.certresolver=dev
       - traefik.http.services.web.loadbalancer.server.port=80
+      # Second site: monitor.localhost routed to same container
+      - traefik.http.routers.monitor.rule=Host(`monitor.localhost`)
+      - traefik.http.routers.monitor.entrypoints=web
+      - traefik.http.routers.monitor.service=monitor
+      - traefik.http.services.monitor.loadbalancer.server.port=80
 
   mailhog:
     image: mailhog/mailhog
@@ -242,6 +247,30 @@ services:
       - traefik.http.routers.nocodb.entrypoints=web
       # - traefik.http.routers.nocodb.tls=true
       - traefik.http.services.nocodb.loadbalancer.server.port=8080
+
+  docker-socket-proxy:
+    image: tecnativa/docker-socket-proxy:latest
+    container_name: docker-socket-proxy
+    restart: unless-stopped
+    # Do NOT publish this port externally; other containers can reach it at http://docker-socket-proxy:2375
+    # ports:
+    #   - "127.0.0.1:2375:2375"  # Optional: only bind to localhost if you really need host access
+    environment:
+      - LOG_LEVEL=warning
+      # Allow only the minimal set of API groups needed; set to 0 to deny
+      - CONTAINERS=1
+      - IMAGES=1
+      - NETWORKS=1
+      - VOLUMES=1
+      - INFO=1
+      - VERSION=1
+      - EVENTS=1
+      # - POST=0  # Keep write ops disabled by default
+      # - DELETE=0
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - app-net
 
 volumes:
   db_data:

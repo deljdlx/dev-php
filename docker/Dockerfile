@@ -121,9 +121,9 @@ COPY php/elastic_apm.ini /etc/php/7.4/cli/conf.d/98-elastic-apm.ini
 # Apache Configuration
 # ===================================================
 
-COPY apache/myurgo.conf /etc/apache2/sites-available/myurgo.conf
-RUN a2ensite myurgo.conf && a2dissite 000-default.conf \
- && echo "127.0.0.1 myurgo.local" >> /etc/hosts \
+COPY apache/dev.conf /etc/apache2/sites-available/dev.conf
+RUN a2ensite dev.conf && a2dissite 000-default.conf \
+ && echo "127.0.0.1 dev.localhost" >> /etc/hosts \
  && a2dismod php7.* php8.* || true
 
 RUN git config --global --add safe.directory /var/www/html
