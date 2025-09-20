@@ -43,6 +43,8 @@ services:
       - ./src:/var/www/html
       - ./src/tmp/xdebug-traces:/var/www/html/tmp/xdebug-traces
       - composer_cache:/tmp/composer
+      # Load all Apache vhost files dynamically from host
+      - ./docker/apache:/etc/apache2/sites-enabled:ro
     working_dir: /var/www/html
     environment:
       COMPOSER_HOME: /tmp/composer
