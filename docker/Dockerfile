@@ -120,11 +120,14 @@ COPY php/elastic_apm.ini /etc/php/7.4/cli/conf.d/98-elastic-apm.ini
 # ===================================================
 # Apache Configuration
 # ===================================================
+RUN a2dissite 000-default.conf && a2dismod php7.* php8.* || true
 
 COPY apache/web.conf /etc/apache2/sites-available/web.conf
-RUN a2ensite web.conf && a2dissite 000-default.conf \
- && echo "127.0.0.1 web.localhost" >> /etc/hosts \
- && a2dismod php7.* php8.* || true
+RUN a2ensite web.conf
+
+COPY apache/monitor.conf /etc/apache2/sites-available/monitor.conf
+RUN a2ensite monitor.conf
+
 
 RUN git config --global --add safe.directory /var/www/html
 
