@@ -77,6 +77,11 @@ services:
       - traefik.http.routers.monitor.service=monitor
       - traefik.http.services.monitor.loadbalancer.server.port=80
 
+      - traefik.http.routers.myurgo.rule=Host(`myurgo.${DOMAIN:-localhost}`)
+      - traefik.http.routers.myurgo.entrypoints=web
+      - traefik.http.routers.myurgo.service=myurgo
+      - traefik.http.services.myurgo.loadbalancer.server.port=80
+
   mailhog:
     image: mailhog/mailhog
     container_name: mailhog
@@ -170,7 +175,7 @@ services:
     ports:
       - "5601:5601"
     environment:
-      - ELASTICSEARCH_HOSTS=http://elasticsearch.${DOMAIN:-localhost}:9200
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
     depends_on:
       - elasticsearch
     networks:
