@@ -10,6 +10,21 @@ use App\Support\Http;
 use App\Docker\DockerClient;
 use App\Docker\ServiceDiscovery;
 
+
+// file_put_contents('/var/log/app/access.log', date('Y-m-d H:i:s') . " " . ($_SERVER['REMOTE_ADDR'] ?? '-') . " " . ($_SERVER['REQUEST_METHOD'] ?? '-') . " " . ($_SERVER['REQUEST_URI'] ?? '-') . "\n", FILE_APPEND);
+
+$logData = [
+	'time' => date('Y-m-d H:i:s'),
+	'ip' => $_SERVER['REMOTE_ADDR'] ?? '-',
+	'method' => $_SERVER['REQUEST_METHOD'] ?? '-',
+	'uri' => $_SERVER['REQUEST_URI'] ?? '-',
+	'foo' => 'bar', // Exemple de donnée supplémentaire
+];
+
+$jsonLog = json_encode($logData);
+file_put_contents('/var/log/app/access.log', $jsonLog . "\n", FILE_APPEND);
+
+
 function h(?string $s): string { return htmlspecialchars((string)$s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); }
 
 $config = new Config();

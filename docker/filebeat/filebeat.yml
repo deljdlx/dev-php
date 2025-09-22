@@ -1,25 +1,25 @@
+# docker/filebeat/filebeat.yml
 filebeat.inputs:
-  - type: filestream
-    id: docker-logs
+  - type: log                # <<< au lieu de filestream
     enabled: true
     paths:
-      - /var/lib/docker/containers/*/*.log
-    parsers:
-      - container:
-          stream: all
-          format: auto
+      - /logs/*.log
+    scan_frequency: 1s       # réactivité
+    ignore_older: 0          # ne jamais ignorer
 
 processors:
-  - add_docker_metadata: ~
+  - add_docker_metadata: ~   # ok, pas bloquant
   - drop_event:
       when:
         equals:
           container.labels.com_docker_compose_service: "filebeat"
+
   - decode_json_fields:
       fields: ["message"]
       target: "json"
       overwrite_keys: true
       add_error_key: true
+
 
 setup.kibana:
   host: "kibana:5601"
@@ -29,7 +29,8 @@ output.elasticsearch:
 
 setup.ilm.enabled: true
 setup.template.enabled: true
-setup.dashboards.enabled: true
+setup.dashboards.enabled: false
 
+# active le debug juste le temps du test
+logging.level: debug
 logging.metrics.enabled: false
-# yaml strict.perms: false

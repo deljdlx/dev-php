@@ -62,9 +62,8 @@ RUN rm -rf /var/lib/apt/lists/*
 # Remap www-data UID/GID to host values (improves permissions on mounted volume)
 # ===================================================
 RUN groupmod -o -g ${HOST_GID} www-data \
- && usermod -o -u ${HOST_UID} www-data \
- && install -d -m 0775 -o www-data -g www-data /var/www/html
-
+    && usermod -o -u ${HOST_UID} www-data \
+    && install -d -m 0775 -o www-data -g www-data /var/www/html
 
 # ===================================================
 # Install Composer by copying from official image
