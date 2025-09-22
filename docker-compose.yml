@@ -29,6 +29,24 @@ services:
     networks:
       - app-net
 
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:7.17.26
+    container_name: filebeat
+    user: root
+    # Copy config inside container to satisfy Filebeat's strict ownership check, then start
+    command: ["/bin/sh","-c","cp /config/filebeat.yml /usr/share/filebeat/filebeat.yml && chown root:root /usr/share/filebeat/filebeat.yml && exec filebeat -e --strict.perms=false"]
+    restart: unless-stopped
+    depends_on:
+      - elasticsearch
+      - kibana
+    networks:
+      - app-net
+    volumes:
+      - ./docker/filebeat/filebeat.yml:/config/filebeat.yml:ro
+      - filebeat_data:/usr/share/filebeat/data
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
   web:
     # profiles: ["php8"]
     build:
@@ -287,6 +305,7 @@ volumes:
   portainer_data:
   netdata_data:
   nocodb_data:
+  filebeat_data:
 
 networks:
   app-net:

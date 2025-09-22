@@ -1,0 +1,35 @@
+filebeat.inputs:
+  - type: filestream
+    id: docker-logs
+    enabled: true
+    paths:
+      - /var/lib/docker/containers/*/*.log
+    parsers:
+      - container:
+          stream: all
+          format: auto
+
+processors:
+  - add_docker_metadata: ~
+  - drop_event:
+      when:
+        equals:
+          container.labels.com_docker_compose_service: "filebeat"
+  - decode_json_fields:
+      fields: ["message"]
+      target: "json"
+      overwrite_keys: true
+      add_error_key: true
+
+setup.kibana:
+  host: "kibana:5601"
+
+output.elasticsearch:
+  hosts: ["http://elasticsearch:9200"]
+
+setup.ilm.enabled: true
+setup.template.enabled: true
+setup.dashboards.enabled: true
+
+logging.metrics.enabled: false
+# yaml strict.perms: false
