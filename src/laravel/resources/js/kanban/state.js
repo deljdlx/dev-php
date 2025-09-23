@@ -15,20 +15,24 @@ class KanbanState {
             await this.dataSource.save(columns);
         });
     this.#persistDebounceMs = options.persistDebounceMs ?? 0;
+        this.logger = options.logger;
     }
     /** @type {(columns: any[], state: KanbanState, context?: any) => Promise<void>} */
     #persistHandler;
     /** Allow overriding persistence strategy at runtime */
     setPersist(handler) { if (typeof handler === 'function') this.#persistHandler = handler; }
     async load() { // backward-compat convenience
-        await this.loadAll();
+    this.logger?.debug('state.load()');
+    await this.loadAll();
     }
     async loadColumns() {
+    this.logger?.debug('state.loadColumns()');
         const meta = await (this.dataSource.getColumnsMeta?.() ?? this.dataSource.getColumns());
         // normalize to Column[] with empty tickets
         this.columns = meta.map(c => new Column({ id: c.id, name: c.name, tickets: [] }));
     }
     async loadTickets(columnId) {
+    this.logger?.debug('state.loadTickets()', columnId);
         if (!this.columns.length) await this.loadColumns();
         const col = this.columns.find(c => c.id === columnId);
         if (!col) return;
@@ -38,6 +42,7 @@ class KanbanState {
         }
     }
     async loadAll() {
+    this.logger?.debug('state.loadAll()');
         // If dataSource supports meta + per-column tickets, use it; else fallback to full snapshot
         if (this.dataSource.getColumnsMeta && this.dataSource.getTicketsByColumnId) {
             await this.loadColumns();
@@ -51,6 +56,7 @@ class KanbanState {
     #persistTimer = null;
     #persistDebounceMs = 0;
     async persist(context) {
+        this.logger?.debug('state.persist()', context);
         if (!this.#persistDebounceMs) {
             await this.#persistHandler(this.columns, this, context);
             return;
@@ -73,7 +79,8 @@ class KanbanState {
         return null;
     }
     async moveTicket(ticketId, toColumnId, toIndex) {
-        if (!ticketId || !toColumnId || toIndex == null) return;
+    if (!ticketId || !toColumnId || toIndex == null) return;
+    this.logger?.debug('state.moveTicket()', { ticketId, toColumnId, toIndex });
         let found = null, fromCol = null, fromIdx = -1;
         for (const col of this.columns) {
             const idx = col.tickets.findIndex(t => t.id === ticketId);
@@ -88,7 +95,8 @@ class KanbanState {
     await this.persist({ op: 'moveTicket', ticketId, toColumnId, toIndex });
     }
     async addTicket(columnId, ticket) {
-        if (!columnId) return;
+    if (!columnId) return;
+    this.logger?.debug('state.addTicket()', { columnId, ticket });
         const col = this.columns.find(c => c.id === columnId);
         if (!col) return;
     const toAdd = ticket && ticket.id ? ticket : new Ticket({ ...(ticket || {}), label: sanitizeLabel(ticket?.label) });
@@ -96,6 +104,7 @@ class KanbanState {
     await this.persist({ op: 'addTicket', columnId, ticket: (typeof toAdd.toJSON === 'function' ? toAdd.toJSON() : toAdd) });
     }
     async reset(newCols) {
+    this.logger?.debug('state.reset()');
         this.columns = (newCols || []).map(c => c instanceof Column ? c : new Column(c));
     await this.persist({ op: 'reset' });
     }

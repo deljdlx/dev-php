@@ -2,10 +2,11 @@ import Sortable from 'sortablejs';
 import formatTicketDate from './utils/formatDate';
 
 export class KanbanView {
-    constructor(root, state) {
+    constructor(root, state, logger = null) {
         this.root = root;
         this.state = state;
         this.sortables = new Map();
+        this.logger = logger;
         this.render();
     }
     #colIdFromList(el) { return el?.closest('.col')?.dataset.colId; }
@@ -36,6 +37,7 @@ export class KanbanView {
                 ghostClass: 'ghost',
                 dragClass: 'drag-hint',
                 onAdd: async (evt) => {
+                    this.logger?.debug('view.onAdd', { item: evt.item?.dataset?.id, to: this.#colIdFromList(evt.to), newIndex: evt.newIndex });
                     // Fired on destination list for cross-column moves
                     const ticketId = evt.item.dataset.id;
             const toColId = this.#colIdFromList(evt.to);
@@ -44,6 +46,7 @@ export class KanbanView {
                     this.updateCounts();
                 },
                 onUpdate: async (evt) => {
+                    this.logger?.debug('view.onUpdate', { item: evt.item?.dataset?.id, to: this.#colIdFromList(evt.to), newIndex: evt.newIndex });
                     // Fired on same-column reorders
                     const ticketId = evt.item.dataset.id;
             const toColId = this.#colIdFromList(evt.to);
@@ -59,6 +62,7 @@ export class KanbanView {
                 if (!title) return;
                 const labels = [null, 'blue', 'green', 'orange'];
                 const ticket = { id: undefined, title, label: labels[Math.floor(Math.random()*labels.length)], createdAt: Date.now() };
+                this.logger?.debug('view.addTicket', { columnId: col.id, ticket });
                 await this.state.addTicket(col.id, ticket);
                 // Find the just-added ticket (at index 0)
                 const added = this.state.columns.find(c => c.id === col.id)?.tickets[0] ?? ticket;

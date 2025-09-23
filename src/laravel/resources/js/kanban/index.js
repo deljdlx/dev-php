@@ -3,20 +3,23 @@ import '../../css/kanban.css';
 import KanbanState from './state';
 import demoFactory from './demoFactory';
 import { DemoDataSource } from './datasource';
+import createLogger from './utils/createLogger';
 import { KanbanView } from './view';
 
 (async function bootstrap(){
     const root = document.getElementById('kanban');
     if (!root) return;
-    const dataSource = new DemoDataSource(demoFactory, 'demo.kanban.v1');
-    const state = new KanbanState(dataSource);
+    const logger = createLogger('Kanban');
+    const dataSource = new DemoDataSource(demoFactory, 'demo.kanban.v1', logger);
+    const state = new KanbanState(dataSource, { logger });
     await state.load();
-    const view = new KanbanView(root, state);
+    const view = new KanbanView(root, state, logger);
 
     document.getElementById('addRandom')?.addEventListener('click', async () => {
         const first = state.columns[0];
         const labels = ['blue','green','orange',null];
         const ticket = { id: undefined, title: 'Tâche aléatoire ' + Math.floor(Math.random()*1000), label: labels[Math.floor(Math.random()*labels.length)], createdAt: Date.now() };
+        logger.debug('index.addRandom', { columnId: first.id, ticket });
         await state.addTicket(first.id, ticket);
         const list = document.querySelector(`#list-${first.id}`);
         const added = state.columns.find(c => c.id === first.id)?.tickets[0] ?? ticket;
@@ -26,7 +29,8 @@ import { KanbanView } from './view';
 
     document.getElementById('resetBoard')?.addEventListener('click', async () => {
         if (!confirm('Réinitialiser le board aux données de démo ?')) return;
-    await state.reset(demoFactory());
-        new KanbanView(root, state); // re-render
+        logger.debug('index.resetBoard');
+        await state.reset(demoFactory());
+        new KanbanView(root, state, logger); // re-render
     });
 })();
