@@ -3,7 +3,8 @@ filebeat.inputs:
   - type: log                # <<< au lieu de filestream
     enabled: true
     paths:
-      - /logs/*.log
+      - ${LOG_WEB_PATH:/var/logs/web}/*.log
+
     scan_frequency: 1s       # réactivité
     ignore_older: 0          # ne jamais ignorer
 

@@ -45,9 +45,10 @@ services:
       - ./docker/filebeat/filebeat.yml:/config/filebeat.yml:ro
       - filebeat_data:/usr/share/filebeat/data
       - /var/run/docker.sock:/var/run/docker.sock:ro
-
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
-      - app_logs:/logs:ro
+      - app_logs:${LOG_WEB_PATH:-/var/logs/web}:ro
+    environment:
+      - LOG_WEB_PATH=${LOG_WEB_PATH:-/var/logs/web}
 
   web:
     # profiles: ["php8"]
@@ -60,12 +61,12 @@ services:
     ports:
       - "8080:80"
     volumes:
-      - app_logs:/var/log/app
       - ./src:/var/www/html
       - ./src/tmp/xdebug-traces:/var/www/html/tmp/xdebug-traces
       - composer_cache:/tmp/composer
       # Load all Apache vhost files dynamically from host
       - ./docker/apache:/etc/apache2/sites-enabled:ro
+      - app_logs:${LOG_WEB_PATH:-/var/logs/web}
 
 
 

@@ -16,7 +16,7 @@ if command -v php-fpm8.4 >/dev/null 2>&1; then
 fi
 
 
-chown -R www-data:www-data /var/log/app
+chown -R www-data:www-data /var/logs/web
 
 
 # Show sockets

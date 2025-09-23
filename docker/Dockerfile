@@ -21,12 +21,13 @@ RUN apt-get update && apt-get install -y \
 
 RUN apt-get install -y --no-install-recommends \
     apache2 \
+    sqlite3 \
     php7.4-cli php7.4-common php7.4-fpm \
     php7.4-mysql php7.4-curl php7.4-xml php7.4-mbstring \
-    php7.4-zip php7.4-gd php7.4-bcmath php7.4-imagick php7.4-xdebug \
+    php7.4-zip php7.4-gd php7.4-bcmath php7.4-imagick php7.4-xdebug php7.4-sqlite3 \
     php8.4-cli php8.4-common php8.4-fpm \
     php8.4-mysql php8.4-curl php8.4-xml php8.4-mbstring \
-    php8.4-zip php8.4-gd php8.4-bcmath php8.4-imagick php8.4-xdebug php8.4-intl
+    php8.4-zip php8.4-gd php8.4-bcmath php8.4-imagick php8.4-xdebug php8.4-intl php8.4-sqlite3
 
 RUN update-alternatives --set php /usr/bin/php8.4
 RUN a2enmod proxy proxy_fcgi setenvif rewrite headers expires
@@ -55,7 +56,17 @@ RUN apt-get update && apt-get install -y curl libcurl4 ca-certificates \
 
 RUN rm -rf /var/lib/apt/lists/*
 
-
+# ===================================================
+# Install npm and n
+# ===================================================
+RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
+ && apt-get install -y nodejs \
+ && npm install -g n \
+ && n stable \
+ && apt-get purge -y nodejs npm \
+ && ln -sf /usr/local/bin/node /usr/bin/node \
+ && ln -sf /usr/local/bin/npm /usr/bin/npm \
+ && ln -sf /usr/local/bin/npx /usr/bin/npx
 
 
 # ===================================================

@@ -22,7 +22,7 @@ $logData = [
 ];
 
 $jsonLog = json_encode($logData);
-file_put_contents('/var/log/app/access.log', $jsonLog . "\n", FILE_APPEND);
+file_put_contents('/var/logs/web/access.log', $jsonLog . "\n", FILE_APPEND);
 
 
 function h(?string $s): string { return htmlspecialchars((string)$s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); }
