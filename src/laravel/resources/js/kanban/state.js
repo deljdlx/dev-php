@@ -1,11 +1,25 @@
 import Column from './models/Column';
 import Ticket from './models/Ticket';
+import sanitizeLabel from './utils/sanitizeLabel';
 
 class KanbanState {
-    constructor(dataSource) {
-        this.dataSource = dataSource; // must implement getColumns() and save(columns)
+    /**
+     * @param {object} dataSource - must implement getColumns() and save(columns)
+     * @param {{ persist?: (columns: any[], state: KanbanState, context?: any) => Promise<void> }} [options]
+     */
+    constructor(dataSource, options = {}) {
+        this.dataSource = dataSource;
         this.columns = [];
+        // Default persistence calls the data source as before; can be overridden via options or setPersist()
+    this.#persistHandler = options.persist || (async (columns) => {
+            await this.dataSource.save(columns);
+        });
+    this.#persistDebounceMs = options.persistDebounceMs ?? 0;
     }
+    /** @type {(columns: any[], state: KanbanState, context?: any) => Promise<void>} */
+    #persistHandler;
+    /** Allow overriding persistence strategy at runtime */
+    setPersist(handler) { if (typeof handler === 'function') this.#persistHandler = handler; }
     async load() { // backward-compat convenience
         await this.loadAll();
     }
@@ -20,7 +34,7 @@ class KanbanState {
         if (!col) return;
         const tickets = await (this.dataSource.getTicketsByColumnId?.(columnId));
         if (Array.isArray(tickets)) {
-            col.tickets = tickets.map(t => new Ticket(t));
+            col.tickets = tickets.map(t => new Ticket({ ...t, label: sanitizeLabel(t.label) }));
         }
     }
     async loadAll() {
@@ -34,8 +48,21 @@ class KanbanState {
             this.columns = await this.dataSource.getColumns();
         }
     }
-    async persist() {
-        await this.dataSource.save(this.columns);
+    #persistTimer = null;
+    #persistDebounceMs = 0;
+    async persist(context) {
+        if (!this.#persistDebounceMs) {
+            await this.#persistHandler(this.columns, this, context);
+            return;
+        }
+        if (this.#persistTimer) clearTimeout(this.#persistTimer);
+        await new Promise((resolve) => {
+            this.#persistTimer = setTimeout(async () => {
+                this.#persistTimer = null;
+                await this.#persistHandler(this.columns, this, context);
+                resolve();
+            }, this.#persistDebounceMs);
+        });
     }
     /** @private */
     #findTicket(ticketId) {
@@ -58,19 +85,19 @@ class KanbanState {
         if (!toCol) return;
         const clampedIndex = Math.max(0, Math.min(toIndex, toCol.tickets.length));
         toCol.tickets.splice(clampedIndex, 0, found);
-        await this.persist();
+    await this.persist({ op: 'moveTicket', ticketId, toColumnId, toIndex });
     }
     async addTicket(columnId, ticket) {
         if (!columnId) return;
         const col = this.columns.find(c => c.id === columnId);
         if (!col) return;
-        const toAdd = ticket && ticket.id ? ticket : new Ticket(ticket || {});
+    const toAdd = ticket && ticket.id ? ticket : new Ticket({ ...(ticket || {}), label: sanitizeLabel(ticket?.label) });
         col.tickets.unshift(toAdd);
-        await this.persist();
+    await this.persist({ op: 'addTicket', columnId, ticket: (typeof toAdd.toJSON === 'function' ? toAdd.toJSON() : toAdd) });
     }
     async reset(newCols) {
         this.columns = (newCols || []).map(c => c instanceof Column ? c : new Column(c));
-        await this.persist();
+    await this.persist({ op: 'reset' });
     }
 }
 export default KanbanState;

@@ -8,7 +8,6 @@ export default defineConfig({
             input: [
                 'resources/css/app.css',
                 'resources/js/app.js',
-                'resources/css/kanban.css',
                 'resources/js/kanban/index.js'
             ],
             refresh: true,

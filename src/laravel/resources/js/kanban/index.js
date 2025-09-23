@@ -1,4 +1,5 @@
 import '../bootstrap';
+import '../../css/kanban.css';
 import KanbanState from './state';
 import demoFactory from './demoFactory';
 import { DemoDataSource } from './datasource';

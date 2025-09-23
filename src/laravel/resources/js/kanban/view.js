@@ -1,4 +1,5 @@
 import Sortable from 'sortablejs';
+import formatTicketDate from './utils/formatDate';
 
 export class KanbanView {
     constructor(root, state) {
@@ -14,12 +15,14 @@ export class KanbanView {
             const section = document.createElement('section');
             section.className = 'col';
             section.dataset.colId = col.id;
+            section.setAttribute('role', 'region');
+            section.setAttribute('aria-labelledby', `col-title-${col.id}`);
             section.innerHTML = `
                 <div class="col-header">
-                    <div class="col-title">${col.name}</div>
-                    <div class="count">${col.tickets.length}</div>
+                    <div class="col-title" id="col-title-${col.id}">${col.name}</div>
+                    <div class="count" aria-live="polite" aria-atomic="true">${col.tickets.length}</div>
                 </div>
-                <div class="list" id="list-${col.id}"></div>
+                <div class="list" id="list-${col.id}" role="list" aria-describedby="col-title-${col.id}"></div>
                 <button class="btn" data-add="${col.id}" style="width:100%; margin-top:8px;">+ Ajouter</button>
             `;
             this.root.appendChild(section);
@@ -59,7 +62,11 @@ export class KanbanView {
                 await this.state.addTicket(col.id, ticket);
                 // Find the just-added ticket (at index 0)
                 const added = this.state.columns.find(c => c.id === col.id)?.tickets[0] ?? ticket;
-                list.prepend(this.createCardElement(added));
+                const el = this.createCardElement(added);
+                list.prepend(el);
+                // place focus on the added card for keyboard users
+                el.setAttribute('tabindex', '-1');
+                el.focus({ preventScroll: true });
                 this.updateCounts();
             });
         }
@@ -75,10 +82,12 @@ export class KanbanView {
         const wrap = document.createElement('div');
         wrap.className = 'card';
         wrap.dataset.id = ticket.id;
-        wrap.innerHTML = `
+    wrap.setAttribute('role', 'listitem');
+    wrap.setAttribute('aria-label', ticket.title);
+    wrap.innerHTML = `
             <div class="card-title">${this.#escape(ticket.title)}</div>
             <div class="card-meta">
-                <span>${new Date(ticket.createdAt).toLocaleDateString()}</span>
+        <span>${formatTicketDate(ticket.createdAt)}</span>
                 ${ticket.label ? `<span class="label ${ticket.label}">${ticket.label.toUpperCase()}</span>` : ''}
             </div>
         `;
