@@ -1,0 +1,132 @@
+/* Kanban styles with maximal CSS variable usage */
+:root {
+  /* Colors */
+  --kanban-bg: #0b1020;
+  --kanban-text: #e2e8f0;
+  --kanban-muted: #98a2b3;
+  --kanban-accent: #6ea8fe;
+
+  --kanban-panel: #131a2a;
+  --kanban-border: rgba(255,255,255,0.06);
+  --kanban-card-bg: #0f172a;
+  --kanban-count-bg: #1f2937;
+  --kanban-btn-bg: #1f2937;
+  --kanban-btn-border: #334155;
+  --kanban-btn-bg-hover: #263244;
+
+  /* Layout */
+  --kanban-gap: 16px;
+  --kanban-radius: 10px;
+  --kanban-shadow-inset: 0 0 0 1px var(--kanban-border) inset;
+  --kanban-col-min: 260px;
+  --kanban-col-max: 1fr;
+
+  /* Typography */
+  --kanban-font: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
+  --kanban-title-weight: 700;
+  --kanban-title-letter: 0.2px;
+  --kanban-card-title-size: 14px;
+  --kanban-card-meta-size: 12px;
+  --kanban-count-size: 12px;
+  --kanban-btn-pad-y: 8px;
+  --kanban-btn-pad-x: 12px;
+
+  /* Labels */
+  --kanban-label-blue: #1d4ed8;
+  --kanban-label-green: #16a34a;
+  --kanban-label-orange: #ea580c;
+
+  /* Drag */
+  --kanban-ghost-opacity: 0.4;
+  --kanban-drag-outline: 2px dashed rgba(110,168,254,.4);
+}
+
+/* Optional light theme override */
+[data-theme="light"] {
+  --kanban-bg: #f8fafc;
+  --kanban-text: #0f172a;
+  --kanban-muted: #475569;
+  --kanban-panel: #ffffff;
+  --kanban-card-bg: #ffffff;
+  --kanban-border: rgba(15,23,42,0.08);
+  --kanban-count-bg: #e2e8f0;
+  --kanban-btn-bg: #e2e8f0;
+  --kanban-btn-bg-hover: #cbd5e1;
+}
+
+html, body { height: 100%; }
+body {
+  margin: 0;
+  font-family: var(--kanban-font);
+  background: var(--kanban-bg);
+  color: var(--kanban-text);
+}
+
+.wrap { padding: 20px; }
+
+.title { margin: 0; font-size: 18px; color: var(--kanban-text); }
+
+.board {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(var(--kanban-col-min), var(--kanban-col-max)));
+  gap: var(--kanban-gap);
+  align-items: start;
+}
+
+.col {
+  background: var(--kanban-panel);
+  border-radius: var(--kanban-radius);
+  padding: 12px;
+  box-shadow: var(--kanban-shadow-inset);
+}
+
+.col-header { display:flex; align-items:center; justify-content: space-between; margin-bottom: 10px; }
+.col-title { font-weight: var(--kanban-title-weight); letter-spacing: var(--kanban-title-letter); }
+
+.count {
+  background: var(--kanban-count-bg);
+  color: var(--kanban-muted);
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: var(--kanban-count-size);
+}
+
+.list { display:flex; flex-direction: column; gap: 8px; min-height: 40px; }
+
+.card {
+  background: var(--kanban-card-bg);
+  border: 1px solid var(--kanban-btn-border);
+  border-radius: var(--kanban-radius);
+  padding: 10px;
+  cursor: grab;
+  user-select: none;
+}
+.card:active { cursor: grabbing; }
+
+.card-title { font-size: var(--kanban-card-title-size); font-weight: 600; }
+.card-meta { color: var(--kanban-muted); font-size: var(--kanban-card-meta-size); margin-top: 6px; display:flex; gap:10px; align-items:center; }
+
+.label { padding: 2px 6px; border-radius: 6px; font-size: 11px; font-weight: 700; letter-spacing:.25px; opacity:.9; }
+.label.blue { background: var(--kanban-label-blue); color: #fff; }
+.label.green { background: var(--kanban-label-green); color: #fff; }
+.label.orange { background: var(--kanban-label-orange); color: #fff; }
+
+.ghost { opacity: var(--kanban-ghost-opacity); }
+.drag-hint { outline: var(--kanban-drag-outline); border-radius: 8px; }
+
+.toolbar { display:flex; align-items:center; justify-content: space-between; margin-bottom: 16px; }
+
+.btn {
+  background: var(--kanban-btn-bg);
+  color: var(--kanban-text);
+  border:1px solid var(--kanban-btn-border);
+  padding: var(--kanban-btn-pad-y) var(--kanban-btn-pad-x);
+  border-radius: 8px;
+  cursor: pointer;
+}
+.btn:hover { background: var(--kanban-btn-bg-hover); }
+
+.credits { margin-top: 18px; color: var(--kanban-muted); font-size: 12px; }
+
+@media (max-width: 1100px) { .board { grid-template-columns: repeat(2, minmax(var(--kanban-col-min), var(--kanban-col-max))); } }
+@media (max-width: 600px) { .board { grid-template-columns: 1fr; } }
