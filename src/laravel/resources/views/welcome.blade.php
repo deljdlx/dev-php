@@ -128,6 +128,11 @@
                                 Deploy now
                             </a>
                         </li>
+                        <li>
+                            <a href="{{ route('test.counter') }}" class="inline-block px-5 py-1.5 border border-[#19140035] dark:border-[#3E3E3A] rounded-sm text-sm leading-normal hover:border-black dark:hover:border-white">
+                                Test: Compteur Livewire
+                            </a>
+                        </li>
                     </ul>
                 </div>
                 <div class="bg-[#fff2f2] dark:bg-[#1D0002] relative lg:-ml-px -mb-px lg:mb-0 rounded-t-lg lg:rounded-t-none lg:rounded-r-lg aspect-[335/376] lg:aspect-auto w-full lg:w-[438px] shrink-0 overflow-hidden">
