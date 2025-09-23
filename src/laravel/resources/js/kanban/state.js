@@ -1,26 +1,42 @@
 import { Column, Ticket } from './models';
 
 export class KanbanState {
-    constructor(storageKey = 'demo.kanban') {
-        this.storageKey = storageKey;
+    constructor(dataSource) {
+        this.dataSource = dataSource; // must implement getColumns() and save(columns)
         this.columns = [];
     }
-    load(initialFactory) {
-        const raw = localStorage.getItem(this.storageKey);
-        if (raw) {
-            try {
-                const data = JSON.parse(raw);
-                this.columns = data.columns.map(c => new Column(c));
-                return;
-            } catch (_) {}
+    async load() { // backward-compat convenience
+        await this.loadAll();
+    }
+    async loadColumns() {
+        const meta = await (this.dataSource.getColumnsMeta?.() ?? this.dataSource.getColumns());
+        // normalize to Column[] with empty tickets
+        this.columns = meta.map(c => new Column({ id: c.id, name: c.name, tickets: [] }));
+    }
+    async loadTickets(columnId) {
+        if (!this.columns.length) await this.loadColumns();
+        const col = this.columns.find(c => c.id === columnId);
+        if (!col) return;
+        const tickets = await (this.dataSource.getTicketsByColumnId?.(columnId));
+        if (Array.isArray(tickets)) {
+            col.tickets = tickets.map(t => new Ticket(t));
         }
-        this.columns = initialFactory();
-        this.persist();
     }
-    persist() {
-        localStorage.setItem(this.storageKey, JSON.stringify({ columns: this.columns }));
+    async loadAll() {
+        // If dataSource supports meta + per-column tickets, use it; else fallback to full snapshot
+        if (this.dataSource.getColumnsMeta && this.dataSource.getTicketsByColumnId) {
+            await this.loadColumns();
+            for (const c of this.columns) {
+                await this.loadTickets(c.id);
+            }
+        } else {
+            this.columns = await this.dataSource.getColumns();
+        }
     }
-    moveTicket(ticketId, toColumnId, toIndex) {
+    async persist() {
+        await this.dataSource.save(this.columns);
+    }
+    async moveTicket(ticketId, toColumnId, toIndex) {
         let found = null, fromCol = null, fromIdx = -1;
         for (const col of this.columns) {
             const idx = col.tickets.findIndex(t => t.id === ticketId);
@@ -31,17 +47,18 @@ export class KanbanState {
         const toCol = this.columns.find(c => c.id === toColumnId);
         if (!toCol) return;
         toCol.tickets.splice(toIndex, 0, found);
-        this.persist();
+        await this.persist();
     }
-    addTicket(columnId, ticket) {
+    async addTicket(columnId, ticket) {
         const col = this.columns.find(c => c.id === columnId);
         if (!col) return;
-        col.tickets.unshift(ticket);
-        this.persist();
+        const toAdd = ticket && ticket.id ? ticket : new Ticket(ticket || {});
+        col.tickets.unshift(toAdd);
+        await this.persist();
     }
-    reset(newCols) {
+    async reset(newCols) {
         this.columns = newCols;
-        this.persist();
+        await this.persist();
     }
 }
 

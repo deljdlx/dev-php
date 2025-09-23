@@ -31,23 +31,25 @@ export class KanbanView {
                 animation: 150,
                 ghostClass: 'ghost',
                 dragClass: 'drag-hint',
-                onEnd: (evt) => {
+                onEnd: async (evt) => {
                     const ticketId = evt.item.dataset.id;
                     const toColId = section.dataset.colId;
                     const toIndex = evt.newIndex;
-                    this.state.moveTicket(ticketId, toColId, toIndex);
+                    await this.state.moveTicket(ticketId, toColId, toIndex);
                     this.updateCounts();
                 }
             });
             this.sortables.set(col.id, sortable);
 
-            section.querySelector('[data-add]')?.addEventListener('click', () => {
+            section.querySelector('[data-add]')?.addEventListener('click', async () => {
                 const title = prompt('Titre de la carte:');
                 if (!title) return;
                 const labels = [null, 'blue', 'green', 'orange'];
                 const ticket = { id: undefined, title, label: labels[Math.floor(Math.random()*labels.length)], createdAt: Date.now() };
-                this.state.addTicket(col.id, ticket);
-                list.prepend(this.createCardElement(ticket));
+                await this.state.addTicket(col.id, ticket);
+                // Find the just-added ticket (at index 0)
+                const added = this.state.columns.find(c => c.id === col.id)?.tickets[0] ?? ticket;
+                list.prepend(this.createCardElement(added));
                 this.updateCounts();
             });
         }
