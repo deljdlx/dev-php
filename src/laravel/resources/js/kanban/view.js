@@ -31,9 +31,18 @@ export class KanbanView {
                 animation: 150,
                 ghostClass: 'ghost',
                 dragClass: 'drag-hint',
-                onEnd: async (evt) => {
+                onAdd: async (evt) => {
+                    // Fired on destination list for cross-column moves
                     const ticketId = evt.item.dataset.id;
-                    const toColId = section.dataset.colId;
+                    const toColId = evt.to.closest('.col')?.dataset.colId;
+                    const toIndex = evt.newIndex;
+                    await this.state.moveTicket(ticketId, toColId, toIndex);
+                    this.updateCounts();
+                },
+                onUpdate: async (evt) => {
+                    // Fired on same-column reorders
+                    const ticketId = evt.item.dataset.id;
+                    const toColId = evt.to.closest('.col')?.dataset.colId;
                     const toIndex = evt.newIndex;
                     await this.state.moveTicket(ticketId, toColId, toIndex);
                     this.updateCounts();
