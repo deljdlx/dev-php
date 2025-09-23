@@ -7,6 +7,7 @@ export class KanbanView {
         this.sortables = new Map();
         this.render();
     }
+    #colIdFromList(el) { return el?.closest('.col')?.dataset.colId; }
     render() {
         this.root.innerHTML = '';
         for (const col of this.state.columns) {
@@ -26,7 +27,7 @@ export class KanbanView {
             const list = section.querySelector('.list');
             for (const t of col.tickets) list.appendChild(this.createCardElement(t));
 
-            const sortable = new Sortable(list, {
+        const sortable = new Sortable(list, {
                 group: 'kanban',
                 animation: 150,
                 ghostClass: 'ghost',
@@ -34,7 +35,7 @@ export class KanbanView {
                 onAdd: async (evt) => {
                     // Fired on destination list for cross-column moves
                     const ticketId = evt.item.dataset.id;
-                    const toColId = evt.to.closest('.col')?.dataset.colId;
+            const toColId = this.#colIdFromList(evt.to);
                     const toIndex = evt.newIndex;
                     await this.state.moveTicket(ticketId, toColId, toIndex);
                     this.updateCounts();
@@ -42,7 +43,7 @@ export class KanbanView {
                 onUpdate: async (evt) => {
                     // Fired on same-column reorders
                     const ticketId = evt.item.dataset.id;
-                    const toColId = evt.to.closest('.col')?.dataset.colId;
+            const toColId = this.#colIdFromList(evt.to);
                     const toIndex = evt.newIndex;
                     await this.state.moveTicket(ticketId, toColId, toIndex);
                     this.updateCounts();

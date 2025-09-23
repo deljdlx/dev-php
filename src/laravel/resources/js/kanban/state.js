@@ -36,7 +36,16 @@ export class KanbanState {
     async persist() {
         await this.dataSource.save(this.columns);
     }
+    /** @private */
+    #findTicket(ticketId) {
+        for (const col of this.columns) {
+            const idx = col.tickets.findIndex(t => t.id === ticketId);
+            if (idx !== -1) return { ticket: col.tickets[idx], col, idx };
+        }
+        return null;
+    }
     async moveTicket(ticketId, toColumnId, toIndex) {
+        if (!ticketId || !toColumnId || toIndex == null) return;
         let found = null, fromCol = null, fromIdx = -1;
         for (const col of this.columns) {
             const idx = col.tickets.findIndex(t => t.id === ticketId);
@@ -46,10 +55,12 @@ export class KanbanState {
         fromCol.tickets.splice(fromIdx, 1);
         const toCol = this.columns.find(c => c.id === toColumnId);
         if (!toCol) return;
-        toCol.tickets.splice(toIndex, 0, found);
+        const clampedIndex = Math.max(0, Math.min(toIndex, toCol.tickets.length));
+        toCol.tickets.splice(clampedIndex, 0, found);
         await this.persist();
     }
     async addTicket(columnId, ticket) {
+        if (!columnId) return;
         const col = this.columns.find(c => c.id === columnId);
         if (!col) return;
         const toAdd = ticket && ticket.id ? ticket : new Ticket(ticket || {});
@@ -57,7 +68,7 @@ export class KanbanState {
         await this.persist();
     }
     async reset(newCols) {
-        this.columns = newCols;
+        this.columns = (newCols || []).map(c => c instanceof Column ? c : new Column(c));
         await this.persist();
     }
 }

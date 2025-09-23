@@ -24,7 +24,7 @@ export class DemoDataSource {
   // Legacy full-columns loader (still available if needed)
   async getColumns() {
     const data = await this.#ensureSeed();
-    return data.columns.map(c => new Column(c));
+    return data.columns.map(c => Column.fromJSON(c));
   }
   // New: only columns meta (id, name)
   async getColumnsMeta() {
@@ -38,6 +38,8 @@ export class DemoDataSource {
     return Array.isArray(col?.tickets) ? col.tickets : [];
   }
   async save(columns) {
-    localStorage.setItem(this.storageKey, JSON.stringify({ columns }));
+    // Persist as plain DTOs
+    const dto = { columns: columns.map(c => (typeof c.toJSON === 'function' ? c.toJSON() : c)) };
+    localStorage.setItem(this.storageKey, JSON.stringify(dto));
   }
 }
