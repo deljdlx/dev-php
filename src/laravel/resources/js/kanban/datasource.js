@@ -1,4 +1,4 @@
-import { Column } from './models';
+import Column from './models/Column';
 
 /**
  * DemoDataSource: loads columns from localStorage when available,

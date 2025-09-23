@@ -1,5 +1,6 @@
 import '../bootstrap';
-import { KanbanState, demoFactory } from './state';
+import KanbanState from './state';
+import demoFactory from './demoFactory';
 import { DemoDataSource } from './datasource';
 import { KanbanView } from './view';
 
