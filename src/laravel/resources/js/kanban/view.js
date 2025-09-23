@@ -1,5 +1,5 @@
 import Sortable from 'sortablejs';
-import formatTicketDate from './utils/formatDate';
+import TicketCard from './ui/TicketCard';
 
 export class KanbanView {
     constructor(root, state, logger = null) {
@@ -83,19 +83,6 @@ export class KanbanView {
         }
     }
     createCardElement(ticket) {
-        const wrap = document.createElement('div');
-        wrap.className = 'card';
-        wrap.dataset.id = ticket.id;
-    wrap.setAttribute('role', 'listitem');
-    wrap.setAttribute('aria-label', ticket.title);
-    wrap.innerHTML = `
-            <div class="card-title">${this.#escape(ticket.title)}</div>
-            <div class="card-meta">
-        <span>${formatTicketDate(ticket.createdAt)}</span>
-                ${ticket.label ? `<span class="label ${ticket.label}">${ticket.label.toUpperCase()}</span>` : ''}
-            </div>
-        `;
-        return wrap;
+        return new TicketCard(ticket).render();
     }
-    #escape(s) { return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 }
