@@ -1,7 +1,6 @@
 import formatTicketDate from '../utils/formatDate';
 import escapeHtml from '../utils/escapeHtml';
-import sanitizeLabel from '../utils/sanitizeLabel';
-import sanitizeCategory from '../utils/sanitizeCategory';
+import { sanitizeTaxonomies, legacyToTaxonomies } from '../utils/taxonomies';
 
 /**
  * TicketCard: agnostic UI component for rendering a ticket card element.
@@ -22,7 +21,8 @@ class TicketCard {
    * }} [opts]
    */
   constructor(ticket, opts = {}) {
-    this.ticket = { ...ticket, label: sanitizeLabel(ticket.label), category: sanitizeCategory(ticket.category) };
+    const tx = sanitizeTaxonomies(ticket?.taxonomies || legacyToTaxonomies(ticket || {}));
+    this.ticket = { ...ticket, taxonomies: tx, label: tx.label ?? null, category: tx.category ?? null, complexity: tx.complexity ?? null };
     this.onClick = opts.onClick;
     this.onRemove = opts.onRemove;
   }
@@ -35,7 +35,7 @@ class TicketCard {
     el.setAttribute('role', 'listitem');
     el.setAttribute('aria-label', this.ticket.title);
 
-    const labelHtml = this.ticket.label
+  const labelHtml = this.ticket.label
       ? `<span class="label ${this.ticket.label}">${escapeHtml(String(this.ticket.label).toUpperCase())}</span>`
       : '';
 
@@ -44,7 +44,7 @@ class TicketCard {
       console.groupEnd();
 
 
-    const categoryHtml = this.ticket.category
+  const categoryHtml = this.ticket.category
       ? `<span class="category cat-${this.ticket.category}">${escapeHtml(String(this.ticket.category))}</span>`
       : '';
 

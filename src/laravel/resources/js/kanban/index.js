@@ -25,11 +25,13 @@ import { KanbanView } from './view';
         const ticket = {
             id: undefined,
             title: 'Tâche aléatoire ' + Math.floor(Math.random()*1000),
-            label: labels[Math.floor(Math.random()*labels.length)],
-            category: categories[Math.floor(Math.random()*categories.length)],
             description: descs[Math.floor(Math.random()*descs.length)],
             author: authors[Math.floor(Math.random()*authors.length)],
-            complexity: complexities[Math.floor(Math.random()*complexities.length)],
+            taxonomies: {
+                label: labels[Math.floor(Math.random()*labels.length)],
+                category: categories[Math.floor(Math.random()*categories.length)],
+                complexity: complexities[Math.floor(Math.random()*complexities.length)],
+            },
             createdAt: Date.now()
         };
         logger.debug('index.addRandom', { columnId: first.id, ticket });
