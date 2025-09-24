@@ -50,11 +50,12 @@ class TicketCard {
 
     const descHtml = this.ticket.description ? `<div class="card-desc">${escapeHtml(this.ticket.description)}</div>` : '';
 
-    el.innerHTML = `
+  el.innerHTML = `
       <div class="card-title">${escapeHtml(this.ticket.title)}</div>
       ${descHtml}
       <div class="card-meta">
-        <span>${formatTicketDate(this.ticket.createdAt)}</span>
+    <span>${formatTicketDate(this.ticket.createdAt)}</span>
+    ${this.ticket.author ? `<span class="author">${escapeHtml(this.ticket.author)}</span>` : ''}
         ${labelHtml}
         ${categoryHtml}
       </div>

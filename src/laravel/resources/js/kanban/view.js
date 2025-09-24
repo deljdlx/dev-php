@@ -61,9 +61,10 @@ export class KanbanView {
                 const title = prompt('Titre de la carte:');
                 if (!title) return;
                 const description = prompt('Description (optionnelle):') || null;
+                const author = prompt('Auteur (optionnel):') || null;
                 const labels = [null, 'blue', 'green', 'orange'];
                 const categories = [null, 'bug', 'feature', 'docs', 'chore'];
-                const ticket = { id: undefined, title, description, label: labels[Math.floor(Math.random()*labels.length)], category: categories[Math.floor(Math.random()*categories.length)], createdAt: Date.now() };
+                const ticket = { id: undefined, title, description, author, label: labels[Math.floor(Math.random()*labels.length)], category: categories[Math.floor(Math.random()*categories.length)], createdAt: Date.now() };
                 this.logger?.debug('view.addTicket', { columnId: col.id, ticket });
                 await this.state.addTicket(col.id, ticket);
                 // Find the just-added ticket (at index 0)
