@@ -99,7 +99,7 @@ export class KanbanView {
                         wrap.innerHTML = `
                             <div style="display:grid; gap:8px;">
                               <div><strong>Catégorie:</strong> ${data?.category ? `<span class="category cat-${data.category}">${escapeHtml(String(data.category))}</span>` : '-'}</div>
-                              <div><strong>Label:</strong> ${data?.label ?? '-'}</div>
+                              <div><strong>Label:</strong> ${data?.label ? `<span class="label ${data.label}">${escapeHtml(String(data.label).toUpperCase())}</span>` : '-'}</div>
                               <div><strong>Auteur:</strong> ${data?.author ?? '-'}</div>
                               <div><strong>Créé le:</strong> ${new Date(data?.createdAt||Date.now()).toLocaleString()}</div>
                               ${data?.description ? `<div><strong>Description:</strong><br/>${escapeHtml(String(data.description))}</div>` : ''}
