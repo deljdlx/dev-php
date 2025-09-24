@@ -6,20 +6,24 @@ import { sanitizeTaxonomies, legacyToTaxonomies } from '../utils/taxonomies';
  * TicketCard: agnostic UI component for rendering a ticket card element.
  * - No state or datasource dependency
  * - Accepts callbacks for interactions
+ * - Can receive an allowedMap to sanitize taxonomies against board meta
  */
 class TicketCard {
   /**
-   * @param {{
-   *   id: string,
-   *   title: string,
-   *   label?: 'blue'|'green'|'orange'|null,
-   *   createdAt?: number
-   * }} ticket
-   * @param {{
-   *   onClick?: (id: string, el: HTMLElement) => void,
-  *   onRemove?: (id: string, el: HTMLElement) => void,
-  *   allowedMap?: Record<string, Set<string>>
-   * }} [opts]
+   * @param {Object} ticket
+   * @param {string} ticket.id
+   * @param {string} ticket.title
+   * @param {(string|null)} [ticket.description]
+   * @param {(string|null)} [ticket.author]
+   * @param {Object<string, (string|null)>} [ticket.taxonomies]
+   * @param {number} [ticket.createdAt]
+   * @param {(string|null)} [ticket.label] Legacy support
+   * @param {(string|null)} [ticket.category] Legacy support
+   * @param {(string|null)} [ticket.complexity] Legacy support
+   * @param {Object} [opts]
+   * @param {(id: string, el: HTMLElement) => void} [opts.onClick]
+   * @param {(id: string, el: HTMLElement) => void} [opts.onRemove]
+   * @param {Object<string, Set<string>>} [opts.allowedMap] Map of taxonomyKey -> Set of allowed option keys
    */
   constructor(ticket, opts = {}) {
    const tx = sanitizeTaxonomies(ticket?.taxonomies || legacyToTaxonomies(ticket || {}), opts.allowedMap);
@@ -28,7 +32,7 @@ class TicketCard {
     this.onRemove = opts.onRemove;
   }
 
-  /** Create the DOM element for the ticket card */
+  /** Create and return the DOM element for the ticket card */
   render() {
     const el = document.createElement('div');
     el.className = 'card';
