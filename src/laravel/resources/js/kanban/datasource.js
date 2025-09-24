@@ -1,20 +1,15 @@
 import Column from './models/Column';
-import { ALLOWED_TAXONOMIES } from './utils/taxonomies';
 
 function warn(msg, extra) {
   try { console.warn('[Kanban config]', msg, extra ?? ''); } catch {}
 }
 
 function defaultBoardMeta() {
-  const LABELS = { label: 'Couleur', category: 'Catégorie', complexity: 'Complexité' };
-  const taxonomies = Object.fromEntries(
-    Object.entries(ALLOWED_TAXONOMIES).map(([k, set]) => [k, { label: LABELS[k] || k, options: Array.from(set) }])
-  );
-  return { taxonomies };
+  // Minimal, taxonomy-agnostic default
+  return { taxonomies: {} };
 }
 
 function normalizeBoardMeta(meta) {
-  const labelsFallback = { label: 'Couleur', category: 'Catégorie', complexity: 'Complexité' };
   const src = meta?.taxonomies || {};
   const out = {};
   for (const [k, v] of Object.entries(src)) {
@@ -22,11 +17,11 @@ function normalizeBoardMeta(meta) {
       // ensure options as array of {key,label}
       const arr = Array.isArray(v.options) ? v.options : Array.from(v.options);
       const norm = arr.map(o => typeof o === 'object' && o && 'key' in o ? o : { key: String(o), label: String(o) });
-      out[k] = { label: v.label || labelsFallback[k] || k, options: norm };
+  out[k] = { label: v.label || k, options: norm };
     } else if (Array.isArray(v) || v instanceof Set) {
       const arr = Array.isArray(v) ? v : Array.from(v);
       const norm = arr.map(o => ({ key: String(o), label: String(o) }));
-      out[k] = { label: labelsFallback[k] || k, options: norm };
+  out[k] = { label: k, options: norm };
     } else {
       warn(`Taxonomy '${k}' ignored: expected { options } or array, got`, v);
     }
@@ -68,12 +63,12 @@ export class DemoDataSource {
     }
     let data;
     if (Array.isArray(seededFromFactory)) {
-      data = { board: defaultBoardMeta(), columns: seededFromFactory };
+  data = { board: defaultBoardMeta(), columns: seededFromFactory };
     } else if (seededFromFactory && typeof seededFromFactory === 'object') {
-      const board = normalizeBoardMeta(seededFromFactory.board || defaultBoardMeta());
+  const board = normalizeBoardMeta(seededFromFactory.board || defaultBoardMeta());
       data = { board, columns: seededFromFactory.columns || [] };
     } else {
-      data = { board: defaultBoardMeta(), columns: [] };
+  data = { board: defaultBoardMeta(), columns: [] };
     }
     // Persist seed
     localStorage.setItem(this.storageKey, JSON.stringify({ board: data.board, columns: data.columns.map(c => (typeof c.toJSON === 'function' ? c.toJSON() : c)) }));
@@ -110,7 +105,7 @@ export class DemoDataSource {
     // Persist as plain DTOs and preserve board meta
     const existing = (this.#read() || {});
     const dto = {
-      board: existing.board || defaultBoardMeta(),
+  board: existing.board || defaultBoardMeta(),
       columns: columns.map(c => (typeof c.toJSON === 'function' ? c.toJSON() : c)),
     };
     localStorage.setItem(this.storageKey, JSON.stringify(dto));
