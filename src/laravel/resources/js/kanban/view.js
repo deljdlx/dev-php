@@ -98,7 +98,7 @@ export class KanbanView {
                         const wrap = document.createElement('div');
                         wrap.innerHTML = `
                             <div style="display:grid; gap:8px;">
-                              <div><strong>Catégorie:</strong> ${data?.category ?? '-'}</div>
+                              <div><strong>Catégorie:</strong> ${data?.category ? `<span class="category cat-${data.category}">${escapeHtml(String(data.category))}</span>` : '-'}</div>
                               <div><strong>Label:</strong> ${data?.label ?? '-'}</div>
                               <div><strong>Auteur:</strong> ${data?.author ?? '-'}</div>
                               <div><strong>Créé le:</strong> ${new Date(data?.createdAt||Date.now()).toLocaleString()}</div>
