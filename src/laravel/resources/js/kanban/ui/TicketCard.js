@@ -39,9 +39,7 @@ class TicketCard {
       ? `<span class="label ${this.ticket.label}">${escapeHtml(String(this.ticket.label).toUpperCase())}</span>`
       : '';
 
-      console.group('%cTicketCard.js :: 42 =============================', 'color: #626228; font-size: 1rem');
-      console.log('ticket:', this.ticket);
-      console.groupEnd();
+      
 
 
   const categoryHtml = this.ticket.category
