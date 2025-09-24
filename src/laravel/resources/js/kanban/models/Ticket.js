@@ -26,10 +26,10 @@ class Ticket {
     }
     /** @returns {TicketDTO} */
     toJSON() {
-        const base = { id: this.id, title: this.title, description: this.description, author: this.author, createdAt: this.createdAt };
-        // Prefer taxonomies if present; keep legacy fields for compatibility
-        const tx = this.taxonomies || { label: this.label ?? null, category: this.category ?? null, complexity: this.complexity ?? null };
-        return { ...base, ...tx, taxonomies: tx };
+    const base = { id: this.id, title: this.title, description: this.description, author: this.author, createdAt: this.createdAt };
+    // Prefer taxonomies bag; fall back to legacy shim if needed
+    const tx = this.taxonomies || { label: this.label ?? null, category: this.category ?? null, complexity: this.complexity ?? null };
+    return { ...base, taxonomies: tx };
     }
     /** @param {TicketDTO & {taxonomies?: Record<string,string|null>}} dto */
     static fromJSON(dto) {

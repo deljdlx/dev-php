@@ -13,6 +13,14 @@ export class KanbanView {
     this.popup = new Popup();
         this.render();
     }
+    dispose() {
+        for (const s of this.sortables.values()) {
+            try { s?.destroy?.(); } catch {}
+        }
+        this.sortables.clear();
+        try { this.popup?.close?.(); } catch {}
+        this.root.innerHTML = '';
+    }
     #colIdFromList(el) { return el?.closest('.col')?.dataset.colId; }
     render() {
         this.root.innerHTML = '';

@@ -90,7 +90,10 @@ import NewTicketForm from './ui/NewTicketForm';
     document.getElementById('resetBoard')?.addEventListener('click', async () => {
         if (!confirm('Réinitialiser le board aux données de démo ?')) return;
         logger.debug('index.resetBoard');
-        await state.reset(demoFactory());
-        new KanbanView(root, state, logger); // re-render
+        const cfg = demoFactory();
+        await state.reset(cfg);
+        view.dispose?.();
+        // Re-render with current state
+        new KanbanView(root, state, logger);
     });
 })();

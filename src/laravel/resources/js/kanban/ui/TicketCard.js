@@ -21,8 +21,8 @@ class TicketCard {
    * }} [opts]
    */
   constructor(ticket, opts = {}) {
-    const tx = sanitizeTaxonomies(ticket?.taxonomies || legacyToTaxonomies(ticket || {}));
-    this.ticket = { ...ticket, taxonomies: tx, label: tx.label ?? null, category: tx.category ?? null, complexity: tx.complexity ?? null };
+  const tx = sanitizeTaxonomies(ticket?.taxonomies || legacyToTaxonomies(ticket || {}));
+  this.ticket = { ...ticket, taxonomies: tx };
     this.onClick = opts.onClick;
     this.onRemove = opts.onRemove;
   }
