@@ -99,7 +99,7 @@ body {
 
 .list { display:flex; flex-direction: column; gap: 8px; min-height: 40px; }
 
-.card {
+#kanban .card {
   background: var(--kanban-card-bg);
   border: 1px solid var(--kanban-btn-border);
   border-radius: var(--kanban-radius);
@@ -107,34 +107,34 @@ body {
   cursor: grab;
   user-select: none;
 }
-.card:active { cursor: grabbing; }
+#kanban .card:active { cursor: grabbing; }
 
-.card-title { font-size: var(--kanban-card-title-size); font-weight: 600; }
-.card-desc { color: var(--kanban-muted); font-size: 12px; margin-top: 6px; white-space: pre-wrap; }
-.card-meta { color: var(--kanban-muted); font-size: var(--kanban-card-meta-size); margin-top: 6px; display:flex; gap:10px; align-items:center; }
-.card-meta .author { color: var(--kanban-text); opacity: .85; font-weight: 600; }
-.complexity { padding: 2px 6px; border-radius: 6px; font-size: 11px; font-weight: 700; letter-spacing:.25px; opacity:.9; background: #1f2937; color: #e2e8f0; border:1px solid var(--kanban-btn-border); }
-.complexity.complexity-xs { opacity: .7; }
+#kanban .card-title { font-size: var(--kanban-card-title-size); font-weight: 600; }
+#kanban .card-desc { color: var(--kanban-muted); font-size: 12px; margin-top: 6px; white-space: pre-wrap; }
+#kanban .card-meta { color: var(--kanban-muted); font-size: var(--kanban-card-meta-size); margin-top: 6px; display:flex; gap:10px; align-items:center; }
+#kanban .card-meta .author { color: var(--kanban-text); opacity: .85; font-weight: 600; }
+#kanban .complexity { padding: 2px 6px; border-radius: 6px; font-size: 11px; font-weight: 700; letter-spacing:.25px; opacity:.9; background: #1f2937; color: #e2e8f0; border:1px solid var(--kanban-btn-border); }
+#kanban .complexity.complexity-xs { opacity: .7; }
 
-.label { padding: 2px 6px; border-radius: 6px; font-size: 11px; font-weight: 700; letter-spacing:.25px; opacity:.9; }
-.label.blue { background: var(--kanban-label-blue); color: #fff; }
-.label.green { background: var(--kanban-label-green); color: #fff; }
-.label.orange { background: var(--kanban-label-orange); color: #fff; }
+#kanban .label { padding: 2px 6px; border-radius: 6px; font-size: 11px; font-weight: 700; letter-spacing:.25px; opacity:.9; }
+#kanban .label.blue { background: var(--kanban-label-blue); color: #fff; }
+#kanban .label.green { background: var(--kanban-label-green); color: #fff; }
+#kanban .label.orange { background: var(--kanban-label-orange); color: #fff; }
 
-.category { padding: 2px 6px; border-radius: 6px; font-size: 11px; font-weight: 600; opacity:.9; border:1px solid transparent; }
-.category.cat-bug { background: color-mix(in srgb, var(--kanban-cat-bug) 18%, transparent); color: #fecaca; border-color: var(--kanban-cat-bug); }
-.category.cat-feature { background: color-mix(in srgb, var(--kanban-cat-feature) 18%, transparent); color: #ddd6fe; border-color: var(--kanban-cat-feature); }
-.category.cat-docs { background: color-mix(in srgb, var(--kanban-cat-docs) 18%, transparent); color: #bae6fd; border-color: var(--kanban-cat-docs); }
-.category.cat-chore { background: color-mix(in srgb, var(--kanban-cat-chore) 18%, transparent); color: #cbd5e1; border-color: var(--kanban-cat-chore); }
+#kanban .category { padding: 2px 6px; border-radius: 6px; font-size: 11px; font-weight: 600; opacity:.9; border:1px solid transparent; }
+#kanban .category.cat-bug { background: color-mix(in srgb, var(--kanban-cat-bug) 18%, transparent); color: #fecaca; border-color: var(--kanban-cat-bug); }
+#kanban .category.cat-feature { background: color-mix(in srgb, var(--kanban-cat-feature) 18%, transparent); color: #ddd6fe; border-color: var(--kanban-cat-feature); }
+#kanban .category.cat-docs { background: color-mix(in srgb, var(--kanban-cat-docs) 18%, transparent); color: #bae6fd; border-color: var(--kanban-cat-docs); }
+#kanban .category.cat-chore { background: color-mix(in srgb, var(--kanban-cat-chore) 18%, transparent); color: #cbd5e1; border-color: var(--kanban-cat-chore); }
 
 /* Prepend emojis to category labels */
-.category.cat-bug::before { content: '🐞'; margin-right: 4px; }
-.category.cat-feature::before { content: '✨'; margin-right: 4px; }
-.category.cat-docs::before { content: '📄'; margin-right: 4px; }
-.category.cat-chore::before { content: '🧹'; margin-right: 4px; }
+#kanban .category.cat-bug::before { content: '🐞'; margin-right: 4px; }
+#kanban .category.cat-feature::before { content: '✨'; margin-right: 4px; }
+#kanban .category.cat-docs::before { content: '📄'; margin-right: 4px; }
+#kanban .category.cat-chore::before { content: '🧹'; margin-right: 4px; }
 
-.ghost { opacity: var(--kanban-ghost-opacity); }
-.drag-hint { outline: var(--kanban-drag-outline); border-radius: 8px; }
+#kanban .ghost { opacity: var(--kanban-ghost-opacity); }
+#kanban .drag-hint { outline: var(--kanban-drag-outline); border-radius: 8px; }
 
 .toolbar { display:flex; align-items:center; justify-content: space-between; margin-bottom: 16px; }
 
@@ -166,12 +166,12 @@ body {
 .tf-actions { display:flex; justify-content: flex-end; padding-top: 8px; }
 
 /* Generic taxonomy chips fallback */
-.taxo-chip { display:inline-block; padding:2px 6px; border-radius:8px; font-size:11px; background: rgba(125,125,125,0.15); color: var(--kanban-muted); border:1px solid rgba(125,125,125,0.25); }
+#kanban .taxo-chip { display:inline-block; padding:2px 6px; border-radius:8px; font-size:11px; background: rgba(125,125,125,0.15); color: var(--kanban-muted); border:1px solid rgba(125,125,125,0.25); }
 
 /* Example styling hints for dynamically added taxonomies (optional) */
-.taxo-priority-high { background:#ffe0e0; color:#b40000; border-color:#ffb3b3; }
-.taxo-priority-medium { background:#fff6e0; color:#8a5a00; border-color:#ffe0a3; }
-.taxo-priority-low { background:#e8f8e8; color:#0b6b0b; border-color:#bfe5bf; }
+#kanban .taxo-priority-high { background:#ffe0e0; color:#b40000; border-color:#ffb3b3; }
+#kanban .taxo-priority-medium { background:#fff6e0; color:#8a5a00; border-color:#ffe0a3; }
+#kanban .taxo-priority-low { background:#e8f8e8; color:#0b6b0b; border-color:#bfe5bf; }
 
 .ticket-details { display:grid; gap: 10px; }
 .ticket-field { display:flex; gap:8px; align-items: center; }
