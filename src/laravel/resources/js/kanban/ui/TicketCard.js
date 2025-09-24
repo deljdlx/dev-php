@@ -17,11 +17,12 @@ class TicketCard {
    * }} ticket
    * @param {{
    *   onClick?: (id: string, el: HTMLElement) => void,
-   *   onRemove?: (id: string, el: HTMLElement) => void
+  *   onRemove?: (id: string, el: HTMLElement) => void,
+  *   allowedMap?: Record<string, Set<string>>
    * }} [opts]
    */
   constructor(ticket, opts = {}) {
-  const tx = sanitizeTaxonomies(ticket?.taxonomies || legacyToTaxonomies(ticket || {}));
+   const tx = sanitizeTaxonomies(ticket?.taxonomies || legacyToTaxonomies(ticket || {}), opts.allowedMap);
   this.ticket = { ...ticket, taxonomies: tx };
     this.onClick = opts.onClick;
     this.onRemove = opts.onRemove;

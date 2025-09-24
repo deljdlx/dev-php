@@ -1,6 +1,10 @@
 import Column from './models/Column';
 import { ALLOWED_TAXONOMIES } from './utils/taxonomies';
 
+function warn(msg, extra) {
+  try { console.warn('[Kanban config]', msg, extra ?? ''); } catch {}
+}
+
 function defaultBoardMeta() {
   const LABELS = { label: 'Couleur', category: 'Catégorie', complexity: 'Complexité' };
   const taxonomies = Object.fromEntries(
@@ -23,6 +27,8 @@ function normalizeBoardMeta(meta) {
       const arr = Array.isArray(v) ? v : Array.from(v);
       const norm = arr.map(o => ({ key: String(o), label: String(o) }));
       out[k] = { label: labelsFallback[k] || k, options: norm };
+    } else {
+      warn(`Taxonomy '${k}' ignored: expected { options } or array, got`, v);
     }
   }
   return { taxonomies: out };

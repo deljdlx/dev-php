@@ -116,6 +116,7 @@ export class KanbanView {
     }
     createCardElement(ticket) {
         return new TicketCard(ticket, {
+            allowedMap: this.state.getAllowedMap?.(),
             onClick: (id, el, data) => {
                 this.logger?.debug('ticket.click', { id });
                 this.popup.open({
