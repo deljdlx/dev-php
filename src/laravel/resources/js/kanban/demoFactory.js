@@ -34,6 +34,11 @@ function demoFactory() {
         { key: 'm', label: 'M' },
         { key: 'l', label: 'L' },
         { key: 'xl', label: 'XL' },
+      ]},
+      priority: { label: 'Priorité', options: [
+        { key: 'high', label: 'Haute' },
+        { key: 'medium', label: 'Moyenne' },
+        { key: 'low', label: 'Basse' },
       ] },
     }
   };
