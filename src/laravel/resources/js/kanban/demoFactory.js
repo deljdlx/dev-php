@@ -7,10 +7,17 @@ function demoFactory() {
     'Configurer CI GitHub', 'Corriger bug pagination', 'Design page profil',
     'Intégrer Stripe', 'Refacto service mail', 'Rédiger docs API', 'Revue sécurité'
   ];
+  const sampleDescs = [
+    null,
+    'Détails à vérifier avec l\'équipe QA.',
+    'Voir la PR précédente pour le contexte.',
+    'Ajouter des tests unitaires minimaux.',
+  ];
   const mk = (n) => Array.from({length:n}, () => new Ticket({
   title: pick(sampleTitles) + ' #' + Math.floor(Math.random()*900+100),
   label: pick([null,'blue','green','orange']),
-  category: pick([null,'bug','feature','docs','chore'])
+    category: pick([null,'bug','feature','docs','chore']),
+    description: pick(sampleDescs)
   }));
   return [
     new Column({ id:'todo',   name:'À faire',     tickets: mk(4) }),

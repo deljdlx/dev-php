@@ -39,12 +39,20 @@ class TicketCard {
       ? `<span class="label ${this.ticket.label}">${escapeHtml(String(this.ticket.label).toUpperCase())}</span>`
       : '';
 
+      console.group('%cTicketCard.js :: 42 =============================', 'color: #626228; font-size: 1rem');
+      console.log('ticket:', this.ticket);
+      console.groupEnd();
+
+
     const categoryHtml = this.ticket.category
       ? `<span class="category cat-${this.ticket.category}">${escapeHtml(String(this.ticket.category))}</span>`
       : '';
 
+    const descHtml = this.ticket.description ? `<div class="card-desc">${escapeHtml(this.ticket.description)}</div>` : '';
+
     el.innerHTML = `
       <div class="card-title">${escapeHtml(this.ticket.title)}</div>
+      ${descHtml}
       <div class="card-meta">
         <span>${formatTicketDate(this.ticket.createdAt)}</span>
         ${labelHtml}
