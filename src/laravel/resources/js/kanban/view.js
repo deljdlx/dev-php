@@ -114,12 +114,21 @@ export class KanbanView {
                     title: data?.title || 'Ticket',
                     content: () => {
                         const wrap = document.createElement('div');
-                        const buildTaxoField = (key, val) => {
-                            if (val == null || val === '') return '';
-                            if (key === 'label') return `<span class=\"label ${val}\">${escapeHtml(String(val).toUpperCase())}</span>`;
-                            if (key === 'category') return `<span class=\"category cat-${val}\">${escapeHtml(String(val))}</span>`;
-                            if (key === 'complexity') return `<span class=\"complexity complexity-${String(val).toLowerCase()}\">${escapeHtml(String(val).toUpperCase())}</span>`;
-                            return `<span class=\"taxo-chip taxo-${escapeHtml(String(key))} taxo-${escapeHtml(String(key))}-${escapeHtml(String(val))}\">${escapeHtml(String(val))}</span>`;
+                        const buildTaxoField = (key, valKey) => {
+                            if (valKey == null || valKey === '') return '';
+                            const meta = this.state.getTaxonomyMeta?.(key);
+                            const optionLabel = meta?.options?.find?.(o => o.key === valKey)?.label ?? valKey;
+
+                            if (key === 'label') {
+                                return `<span class=\"label ${valKey}\">${escapeHtml(String(optionLabel))}</span>`;
+                            }
+                            if (key === 'category') {
+                                return `<span class=\"category cat-${valKey}\">${escapeHtml(String(optionLabel))}</span>`;
+                            }
+                            if (key === 'complexity') {
+                                return `<span class=\"complexity complexity-${String(valKey).toLowerCase()}\">${escapeHtml(String(optionLabel))}</span>`;
+                            }
+                            return `<span class=\"taxo-chip taxo-${escapeHtml(String(key))} taxo-${escapeHtml(String(key))}-${escapeHtml(String(valKey))}\">${escapeHtml(String(optionLabel))}</span>`;
                         };
                         const tx = data?.taxonomies || {};
                         const txRows = Object.entries(tx).map(([k, v]) => {

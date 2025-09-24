@@ -12,7 +12,7 @@ export default function NewTicketForm({ getOptions, getKeys, getMeta } = { getOp
     const meta = getMeta?.(key) || { label: key, options: [] };
     const values = (meta.options || getOptions?.(key) || []).filter(Boolean);
     const options = ['<option value="">--</option>'].concat(
-      values.map(v => `<option value="${v}">${key === 'category' ? escapeHtml(v) : String(v).toUpperCase()}</option>`) 
+      values.map(o => `<option value="${escapeHtml(String(o.key))}">${escapeHtml(String(o.label))}</option>`) 
     ).join('');
     return `
       <label class="tf-field">

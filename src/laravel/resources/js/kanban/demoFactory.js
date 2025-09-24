@@ -17,9 +17,24 @@ function demoFactory() {
   const authors = ['Alice', 'Bob', 'Chloé', 'David'];
   const board = {
     taxonomies: {
-      label: { label: 'Couleur', options: ['blue','green','orange'] },
-      category: { label: 'Catégorie', options: ['bug','feature','docs','chore'] },
-      complexity: { label: 'Complexité', options: ['xs','s','m','l','xl'] },
+      label: { label: 'Couleur', options: [
+        { key: 'blue', label: 'BLEU' },
+        { key: 'green', label: 'VERT' },
+        { key: 'orange', label: 'ORANGE' },
+      ] },
+      category: { label: 'Catégorie', options: [
+        { key: 'bug', label: 'Bug' },
+        { key: 'feature', label: 'Feature' },
+        { key: 'docs', label: 'Docs' },
+        { key: 'chore', label: 'Chore' },
+      ] },
+      complexity: { label: 'Complexité', options: [
+        { key: 'xs', label: 'XS' },
+        { key: 's', label: 'S' },
+        { key: 'm', label: 'M' },
+        { key: 'l', label: 'L' },
+        { key: 'xl', label: 'XL' },
+      ] },
     }
   };
   const mk = (n) => Array.from({length:n}, () => {
@@ -27,7 +42,8 @@ function demoFactory() {
     for (const [key, meta] of Object.entries(board.taxonomies)) {
       const opts = Array.isArray(meta?.options) ? meta.options : [];
       // 25% chance to be null, else pick a valid option if available
-      chosen[key] = Math.random() < 0.25 ? null : (opts.length ? pick(opts) : null);
+      const picked = Math.random() < 0.25 ? null : (opts.length ? pick(opts) : null);
+      chosen[key] = picked ? picked.key : null;
     }
     return new Ticket({
       title: pick(sampleTitles) + ' #' + Math.floor(Math.random()*900+100),

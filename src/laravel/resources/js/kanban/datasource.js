@@ -15,9 +15,14 @@ function normalizeBoardMeta(meta) {
   const out = {};
   for (const [k, v] of Object.entries(src)) {
     if (v && typeof v === 'object' && (Array.isArray(v.options) || v.options instanceof Set)) {
-      out[k] = { label: v.label || labelsFallback[k] || k, options: Array.isArray(v.options) ? v.options : Array.from(v.options) };
+      // ensure options as array of {key,label}
+      const arr = Array.isArray(v.options) ? v.options : Array.from(v.options);
+      const norm = arr.map(o => typeof o === 'object' && o && 'key' in o ? o : { key: String(o), label: String(o) });
+      out[k] = { label: v.label || labelsFallback[k] || k, options: norm };
     } else if (Array.isArray(v) || v instanceof Set) {
-      out[k] = { label: labelsFallback[k] || k, options: Array.isArray(v) ? v : Array.from(v) };
+      const arr = Array.isArray(v) ? v : Array.from(v);
+      const norm = arr.map(o => ({ key: String(o), label: String(o) }));
+      out[k] = { label: labelsFallback[k] || k, options: norm };
     }
   }
   return { taxonomies: out };
