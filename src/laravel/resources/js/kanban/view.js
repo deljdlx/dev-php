@@ -2,7 +2,7 @@ import Sortable from 'sortablejs';
 import TicketCard from './ui/TicketCard';
 import Popup from './ui/Popup';
 import escapeHtml from './utils/escapeHtml';
-import NewTicketForm from './ui/NewTicketForm';
+import openCreateTicketPopup from './ui/createTicket';
 
 export class KanbanView {
     constructor(root, state, logger = null) {
@@ -70,40 +70,7 @@ export class KanbanView {
             this.sortables.set(col.id, sortable);
 
             section.querySelector('[data-add]')?.addEventListener('click', async () => {
-                const form = NewTicketForm({ getOptions: (k) => this.state.getTaxonomyOptions(k), getKeys: () => this.state.getTaxonomyKeys(), getMeta: (k) => this.state.getTaxonomyMeta(k) });
-                this.popup.open({
-                    title: 'Créer un ticket',
-                    content: () => {
-                        setTimeout(() => {
-                            form.el.addEventListener('submit', async (e) => {
-                                e.preventDefault();
-                                if (!form.el.checkValidity?.() && form.el.reportValidity) {
-                                    form.el.reportValidity();
-                                    return;
-                                }
-                                const data = form.getData();
-                                const ticket = {
-                                    id: undefined,
-                                    title: data.title,
-                                    description: data.description,
-                                    author: data.author,
-                                    taxonomies: data.taxonomies,
-                                    createdAt: Date.now(),
-                                };
-                                this.logger?.debug('view.addTicket', { columnId: col.id, ticket });
-                                await this.state.addTicket(col.id, ticket);
-                                const added = this.state.columns.find(c => c.id === col.id)?.tickets[0] ?? ticket;
-                                const elCard = this.createCardElement(added);
-                                list.prepend(elCard);
-                                elCard.setAttribute('tabindex', '-1');
-                                elCard.focus({ preventScroll: true });
-                                this.updateCounts();
-                                this.popup.close();
-                            }, { once: true });
-                        });
-                        return form.el;
-                    }
-                });
+                openCreateTicketPopup({ view: this, state: this.state, logger: this.logger, columnId: col.id });
             });
         }
     }
