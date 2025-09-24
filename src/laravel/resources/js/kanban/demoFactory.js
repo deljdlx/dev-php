@@ -8,8 +8,9 @@ function demoFactory() {
     'Intégrer Stripe', 'Refacto service mail', 'Rédiger docs API', 'Revue sécurité'
   ];
   const mk = (n) => Array.from({length:n}, () => new Ticket({
-    title: pick(sampleTitles) + ' #' + Math.floor(Math.random()*900+100),
-    label: pick([null,'blue','green','orange'])
+  title: pick(sampleTitles) + ' #' + Math.floor(Math.random()*900+100),
+  label: pick([null,'blue','green','orange']),
+  category: pick([null,'bug','feature','docs','chore'])
   }));
   return [
     new Column({ id:'todo',   name:'À faire',     tickets: mk(4) }),

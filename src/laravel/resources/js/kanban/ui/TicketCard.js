@@ -1,6 +1,7 @@
 import formatTicketDate from '../utils/formatDate';
 import escapeHtml from '../utils/escapeHtml';
 import sanitizeLabel from '../utils/sanitizeLabel';
+import sanitizeCategory from '../utils/sanitizeCategory';
 
 /**
  * TicketCard: agnostic UI component for rendering a ticket card element.
@@ -21,7 +22,7 @@ class TicketCard {
    * }} [opts]
    */
   constructor(ticket, opts = {}) {
-    this.ticket = { ...ticket, label: sanitizeLabel(ticket.label) };
+    this.ticket = { ...ticket, label: sanitizeLabel(ticket.label), category: sanitizeCategory(ticket.category) };
     this.onClick = opts.onClick;
     this.onRemove = opts.onRemove;
   }
@@ -38,11 +39,16 @@ class TicketCard {
       ? `<span class="label ${this.ticket.label}">${escapeHtml(String(this.ticket.label).toUpperCase())}</span>`
       : '';
 
+    const categoryHtml = this.ticket.category
+      ? `<span class="category cat-${this.ticket.category}">${escapeHtml(String(this.ticket.category))}</span>`
+      : '';
+
     el.innerHTML = `
       <div class="card-title">${escapeHtml(this.ticket.title)}</div>
       <div class="card-meta">
         <span>${formatTicketDate(this.ticket.createdAt)}</span>
         ${labelHtml}
+        ${categoryHtml}
       </div>
     `;
 

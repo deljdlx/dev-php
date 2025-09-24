@@ -1,6 +1,7 @@
 import Column from './models/Column';
 import Ticket from './models/Ticket';
 import sanitizeLabel from './utils/sanitizeLabel';
+import sanitizeCategory from './utils/sanitizeCategory';
 
 class KanbanState {
     /**
@@ -38,7 +39,7 @@ class KanbanState {
         if (!col) return;
         const tickets = await (this.dataSource.getTicketsByColumnId?.(columnId));
         if (Array.isArray(tickets)) {
-            col.tickets = tickets.map(t => new Ticket({ ...t, label: sanitizeLabel(t.label) }));
+            col.tickets = tickets.map(t => new Ticket({ ...t, label: sanitizeLabel(t.label), category: sanitizeCategory(t.category) }));
         }
     }
     async loadAll() {
@@ -99,7 +100,7 @@ class KanbanState {
     this.logger?.debug('state.addTicket()', { columnId, ticket });
         const col = this.columns.find(c => c.id === columnId);
         if (!col) return;
-    const toAdd = ticket && ticket.id ? ticket : new Ticket({ ...(ticket || {}), label: sanitizeLabel(ticket?.label) });
+    const toAdd = ticket && ticket.id ? ticket : new Ticket({ ...(ticket || {}), label: sanitizeLabel(ticket?.label), category: sanitizeCategory(ticket?.category) });
         col.tickets.unshift(toAdd);
     await this.persist({ op: 'addTicket', columnId, ticket: (typeof toAdd.toJSON === 'function' ? toAdd.toJSON() : toAdd) });
     }

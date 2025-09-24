@@ -10,15 +10,16 @@ import { KanbanView } from './view';
     const root = document.getElementById('kanban');
     if (!root) return;
     const logger = createLogger('Kanban');
-    const dataSource = new DemoDataSource(demoFactory, 'demo.kanban.v1', logger);
+    const dataSource = new DemoDataSource(demoFactory, 'demo.kanban.v2', logger);
     const state = new KanbanState(dataSource, { logger });
     await state.load();
     const view = new KanbanView(root, state, logger);
 
     document.getElementById('addRandom')?.addEventListener('click', async () => {
         const first = state.columns[0];
-        const labels = ['blue','green','orange',null];
-        const ticket = { id: undefined, title: 'Tâche aléatoire ' + Math.floor(Math.random()*1000), label: labels[Math.floor(Math.random()*labels.length)], createdAt: Date.now() };
+    const labels = ['blue','green','orange',null];
+    const categories = ['bug','feature','docs','chore',null];
+    const ticket = { id: undefined, title: 'Tâche aléatoire ' + Math.floor(Math.random()*1000), label: labels[Math.floor(Math.random()*labels.length)], category: categories[Math.floor(Math.random()*categories.length)], createdAt: Date.now() };
         logger.debug('index.addRandom', { columnId: first.id, ticket });
         await state.addTicket(first.id, ticket);
         const list = document.querySelector(`#list-${first.id}`);

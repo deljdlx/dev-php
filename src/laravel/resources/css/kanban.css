@@ -36,6 +36,12 @@
   --kanban-label-green: #16a34a;
   --kanban-label-orange: #ea580c;
 
+  /* Categories */
+  --kanban-cat-bug: #ef4444;
+  --kanban-cat-feature: #8b5cf6;
+  --kanban-cat-docs: #0ea5e9;
+  --kanban-cat-chore: #64748b;
+
   /* Drag */
   --kanban-ghost-opacity: 0.4;
   --kanban-drag-outline: 2px dashed rgba(110,168,254,.4);
@@ -110,6 +116,12 @@ body {
 .label.blue { background: var(--kanban-label-blue); color: #fff; }
 .label.green { background: var(--kanban-label-green); color: #fff; }
 .label.orange { background: var(--kanban-label-orange); color: #fff; }
+
+.category { padding: 2px 6px; border-radius: 6px; font-size: 11px; font-weight: 600; opacity:.9; border:1px solid transparent; }
+.category.cat-bug { background: color-mix(in srgb, var(--kanban-cat-bug) 18%, transparent); color: #fecaca; border-color: var(--kanban-cat-bug); }
+.category.cat-feature { background: color-mix(in srgb, var(--kanban-cat-feature) 18%, transparent); color: #ddd6fe; border-color: var(--kanban-cat-feature); }
+.category.cat-docs { background: color-mix(in srgb, var(--kanban-cat-docs) 18%, transparent); color: #bae6fd; border-color: var(--kanban-cat-docs); }
+.category.cat-chore { background: color-mix(in srgb, var(--kanban-cat-chore) 18%, transparent); color: #cbd5e1; border-color: var(--kanban-cat-chore); }
 
 .ghost { opacity: var(--kanban-ghost-opacity); }
 .drag-hint { outline: var(--kanban-drag-outline); border-radius: 8px; }
