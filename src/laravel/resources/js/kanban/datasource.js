@@ -33,8 +33,9 @@ function normalizeBoardMeta(meta) {
  * otherwise uses a factory to generate demo data and persists it.
  */
 export class DemoDataSource {
-  constructor(factory, storageKey = 'demo.kanban.v1', logger = null) {
-    this.factory = factory;
+  // Accepts either a factory function OR a plain config object { board, columns }
+  constructor(factoryOrConfig, storageKey = 'demo.kanban.v1', logger = null) {
+    this.factory = factoryOrConfig;
     this.storageKey = storageKey;
     this.logger = logger;
   }
@@ -52,8 +53,13 @@ export class DemoDataSource {
       localStorage.setItem(this.storageKey, JSON.stringify(dto));
       return dto;
     }
-    // Seed using factory; supports both legacy Array and new Object shape
-    const seededFromFactory = this.factory?.();
+    // Seed using a factory function OR a plain config object
+    let seededFromFactory = null;
+    if (typeof this.factory === 'function') {
+      try { seededFromFactory = this.factory(); } catch (e) { this.logger?.debug('factory threw', e); }
+    } else if (this.factory && typeof this.factory === 'object') {
+      seededFromFactory = this.factory;
+    }
     let data;
     if (Array.isArray(seededFromFactory)) {
       data = { board: defaultBoardMeta(), columns: seededFromFactory };
