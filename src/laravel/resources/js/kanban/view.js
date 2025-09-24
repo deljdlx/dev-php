@@ -65,9 +65,10 @@ export class KanbanView {
                 if (!title) return;
                 const description = prompt('Description (optionnelle):') || null;
                 const author = prompt('Auteur (optionnel):') || null;
+                const complexity = prompt('Complexité (xs/s/m/l/xl - optionnel):') || null;
                 const labels = [null, 'blue', 'green', 'orange'];
                 const categories = [null, 'bug', 'feature', 'docs', 'chore'];
-                const ticket = { id: undefined, title, description, author, label: labels[Math.floor(Math.random()*labels.length)], category: categories[Math.floor(Math.random()*categories.length)], createdAt: Date.now() };
+                const ticket = { id: undefined, title, description, author, complexity, label: labels[Math.floor(Math.random()*labels.length)], category: categories[Math.floor(Math.random()*categories.length)], createdAt: Date.now() };
                 this.logger?.debug('view.addTicket', { columnId: col.id, ticket });
                 await this.state.addTicket(col.id, ticket);
                 // Find the just-added ticket (at index 0)
@@ -109,6 +110,10 @@ export class KanbanView {
                                                             <div class="ticket-field ticket-author">
                                                                 <span class="field-label">Auteur:</span>
                                                                 <span class="field-value">${data?.author ? escapeHtml(String(data.author)) : '-'}</span>
+                                                            </div>
+                                                            <div class="ticket-field ticket-complexity">
+                                                                <span class="field-label">Complexité:</span>
+                                                                <span class="field-value">${data?.complexity ? `<span class=\"complexity complexity-${String(data.complexity).toLowerCase()}\">${escapeHtml(String(data.complexity).toUpperCase())}</span>` : '-'}</span>
                                                             </div>
                                                             <div class="ticket-field ticket-created">
                                                                 <span class="field-label">Créé le:</span>

@@ -10,7 +10,7 @@ import { KanbanView } from './view';
     const root = document.getElementById('kanban');
     if (!root) return;
     const logger = createLogger('Kanban');
-    const dataSource = new DemoDataSource(demoFactory, 'demo.kanban.v4', logger);
+    const dataSource = new DemoDataSource(demoFactory, 'demo.kanban.v5', logger);
     const state = new KanbanState(dataSource, { logger });
     await state.load();
     const view = new KanbanView(root, state, logger);
@@ -21,6 +21,7 @@ import { KanbanView } from './view';
         const categories = ['bug','feature','docs','chore'];
         const descs = ['Ticket généré pour test', 'Lorem ipsum dolor sit amet', 'Voir backlog pour contexte', 'Petite tâche technique'];
         const authors = ['Alice', 'Bob', 'Chloé', 'David'];
+        const complexities = ['xs','s','m','l','xl'];
         const ticket = {
             id: undefined,
             title: 'Tâche aléatoire ' + Math.floor(Math.random()*1000),
@@ -28,6 +29,7 @@ import { KanbanView } from './view';
             category: categories[Math.floor(Math.random()*categories.length)],
             description: descs[Math.floor(Math.random()*descs.length)],
             author: authors[Math.floor(Math.random()*authors.length)],
+            complexity: complexities[Math.floor(Math.random()*complexities.length)],
             createdAt: Date.now()
         };
         logger.debug('index.addRandom', { columnId: first.id, ticket });

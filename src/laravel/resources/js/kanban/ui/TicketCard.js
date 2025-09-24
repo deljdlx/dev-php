@@ -48,14 +48,17 @@ class TicketCard {
       ? `<span class="category cat-${this.ticket.category}">${escapeHtml(String(this.ticket.category))}</span>`
       : '';
 
-    const descHtml = this.ticket.description ? `<div class="card-desc">${escapeHtml(this.ticket.description)}</div>` : '';
+  const descHtml = this.ticket.description ? `<div class="card-desc">${escapeHtml(this.ticket.description)}</div>` : '';
+  const complexity = this.ticket.complexity ? String(this.ticket.complexity).toLowerCase() : null;
+  const complexityHtml = complexity ? `<span class="complexity complexity-${complexity}">${escapeHtml(complexity.toUpperCase())}</span>` : '';
 
   el.innerHTML = `
       <div class="card-title">${escapeHtml(this.ticket.title)}</div>
       ${descHtml}
       <div class="card-meta">
     <span>${formatTicketDate(this.ticket.createdAt)}</span>
-    ${this.ticket.author ? `<span class="author">${escapeHtml(this.ticket.author)}</span>` : ''}
+  ${this.ticket.author ? `<span class="author">${escapeHtml(this.ticket.author)}</span>` : ''}
+    ${complexityHtml}
         ${labelHtml}
         ${categoryHtml}
       </div>

@@ -113,6 +113,8 @@ body {
 .card-desc { color: var(--kanban-muted); font-size: 12px; margin-top: 6px; white-space: pre-wrap; }
 .card-meta { color: var(--kanban-muted); font-size: var(--kanban-card-meta-size); margin-top: 6px; display:flex; gap:10px; align-items:center; }
 .card-meta .author { color: var(--kanban-text); opacity: .85; font-weight: 600; }
+.complexity { padding: 2px 6px; border-radius: 6px; font-size: 11px; font-weight: 700; letter-spacing:.25px; opacity:.9; background: #1f2937; color: #e2e8f0; border:1px solid var(--kanban-btn-border); }
+.complexity.complexity-xs { opacity: .7; }
 
 .label { padding: 2px 6px; border-radius: 6px; font-size: 11px; font-weight: 700; letter-spacing:.25px; opacity:.9; }
 .label.blue { background: var(--kanban-label-blue); color: #fff; }

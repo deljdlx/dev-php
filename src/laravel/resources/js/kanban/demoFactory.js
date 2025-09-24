@@ -14,12 +14,14 @@ function demoFactory() {
     'Ajouter des tests unitaires minimaux.',
   ];
   const authors = ['Alice', 'Bob', 'Chloé', 'David'];
+  const complexities = ['xs','s','m','l','xl'];
   const mk = (n) => Array.from({length:n}, () => new Ticket({
   title: pick(sampleTitles) + ' #' + Math.floor(Math.random()*900+100),
   label: pick([null,'blue','green','orange']),
     category: pick([null,'bug','feature','docs','chore']),
     description: pick(sampleDescs),
-    author: pick(authors)
+  author: pick(authors),
+  complexity: pick(complexities)
   }));
   return [
     new Column({ id:'todo',   name:'À faire',     tickets: mk(4) }),
