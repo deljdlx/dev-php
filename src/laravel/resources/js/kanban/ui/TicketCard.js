@@ -40,8 +40,24 @@ class TicketCard {
     el.setAttribute('role', 'listitem');
     el.setAttribute('aria-label', this.ticket.title);
 
-  // Build dynamic taxonomy chips with backward-compatible classes for known keys
+    // Propagate taxonomy tags onto the card container (classes + data-attributes)
     const tx = this.ticket.taxonomies || {};
+    const sanitize = (s) => String(s).toLowerCase().replace(/[^a-z0-9_-]/g, '-');
+    const txKeys = Object.keys(tx);
+    if (txKeys.length) el.classList.add('has-taxonomies');
+    for (const [k, v] of Object.entries(tx)) {
+      const keySafe = sanitize(k);
+      if (keySafe) el.classList.add(`taxo-key-${keySafe}`);
+      if (v != null && v !== '') {
+        const valSafe = sanitize(v);
+        el.setAttribute(`data-taxo-${keySafe}`, String(v));
+        if (keySafe && valSafe) el.classList.add(`taxo-${keySafe}-${valSafe}`);
+      } else {
+        el.setAttribute(`data-taxo-${keySafe}`, '');
+      }
+    }
+
+    // Build dynamic taxonomy chips with backward-compatible classes for known keys
     const chips = [];
     for (const [k, v] of Object.entries(tx)) {
       if (v == null || v === '') continue;
