@@ -13,4 +13,9 @@ class Post extends Model
     protected $fillable = [
         'title', 'content', 'published',
     ];
+
+    public function scopeId($query, $id)
+    {
+        return $query->where('id', $id);
+    }
 }

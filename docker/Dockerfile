@@ -68,6 +68,10 @@ RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
  && ln -sf /usr/local/bin/npm /usr/bin/npm \
  && ln -sf /usr/local/bin/npx /usr/bin/npx
 
+# ===================================================
+# Dependencies for wkhtmltopdf
+# ===================================================
+RUN apt-get install -y libxrender1 libfontconfig1 libx11-dev libxext6
 
 # ===================================================
 # Remap www-data UID/GID to host values (improves permissions on mounted volume)
@@ -109,12 +113,12 @@ RUN COMPOSER_HOME=/root/.composer composer global require --no-interaction --pre
 # PHP Configuration
 # ===================================================
 COPY php/php-dev.ini /etc/php/8.4/fpm/conf.d/99-dev.ini
-COPY php/php-dev.ini /etc/php/8.4/cli/conf.d/99-dev.ini
-COPY php/xdebug.ini /etc/php/8.4/fpm/conf.d/50-xdebug.ini
+COPY php/xdebug.ini /etc/php/8.4/fpm/conf.d/99-xdebug.ini
+# COPY php/php-dev.ini /etc/php/8.4/cli/conf.d/99-dev.ini
 
 COPY php/php-dev.ini /etc/php/7.4/fpm/conf.d/99-dev.ini
+COPY php/xdebug.ini /etc/php/7.4/fpm/conf.d/99-xdebug.ini
 COPY php/php-dev.ini /etc/php/7.4/cli/conf.d/99-dev.ini
-COPY php/xdebug.ini /etc/php/7.4/fpm/conf.d/50-xdebug.ini
 
 COPY php/opcache.ini /etc/php/8.4/fpm/conf.d/99-opcache.ini
 COPY php/opcache.ini /etc/php/8.4/cli/conf.d/99-opcache.ini
@@ -122,9 +126,9 @@ COPY php/opcache.ini /etc/php/7.4/fpm/conf.d/99-opcache.ini
 COPY php/opcache.ini /etc/php/7.4/cli/conf.d/99-opcache.ini
 
 COPY php/elastic_apm.ini /etc/php/8.4/fpm/conf.d/98-elastic-apm.ini
-COPY php/elastic_apm.ini /etc/php/8.4/cli/conf.d/98-elastic-apm.ini
+# COPY php/elastic_apm.ini /etc/php/8.4/cli/conf.d/98-elastic-apm.ini
 COPY php/elastic_apm.ini /etc/php/7.4/fpm/conf.d/98-elastic-apm.ini
-COPY php/elastic_apm.ini /etc/php/7.4/cli/conf.d/98-elastic-apm.ini
+# COPY php/elastic_apm.ini /etc/php/7.4/cli/conf.d/98-elastic-apm.ini
 
 
 # ===================================================
