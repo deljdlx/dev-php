@@ -157,6 +157,14 @@ body {
 .modal-title { font-weight: 700; }
 .modal-close { background: transparent; color: var(--kanban-text); border: none; font-size: 22px; cursor: pointer; }
 .modal-body { padding: 14px; }
+.ticket-form .tf-grid { display: grid; gap: 12px; }
+.tf-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.tf-field { display: grid; gap: 6px; }
+.tf-label { color: var(--kanban-muted); font-weight: 600; font-size: 12px; }
+.tf-input { background: var(--kanban-card-bg); border:1px solid var(--kanban-btn-border); color: var(--kanban-text); border-radius: 8px; padding: 8px 10px; }
+.tf-input:focus { outline: 2px solid var(--kanban-accent); outline-offset: 2px; }
+.tf-actions { display:flex; justify-content: flex-end; padding-top: 8px; }
+
 .ticket-details { display:grid; gap: 10px; }
 .ticket-field { display:flex; gap:8px; align-items: center; }
 .ticket-field .field-label { min-width: 92px; color: var(--kanban-muted); font-weight: 600; }

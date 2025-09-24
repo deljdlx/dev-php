@@ -10,6 +10,7 @@
     <div class="toolbar">
     <h1 class="title">Kanban demo</h1>
         <div>
+            <button class="btn" id="createTicket">Créer nouveau ticket</button>
             <button class="btn" id="addRandom">Ajouter une carte aléatoire</button>
             <button class="btn" id="resetBoard">Réinitialiser</button>
         </div>
