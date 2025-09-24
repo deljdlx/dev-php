@@ -61,9 +61,7 @@ class TicketCard {
       </div>
     `;
 
-    if (this.onClick) {
-      el.addEventListener('click', () => this.onClick?.(this.ticket.id, el));
-    }
+  el.addEventListener('click', () => this.onClick?.(this.ticket.id, el, this.ticket));
 
     return el;
   }

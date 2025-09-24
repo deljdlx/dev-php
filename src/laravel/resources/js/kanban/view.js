@@ -1,5 +1,7 @@
 import Sortable from 'sortablejs';
 import TicketCard from './ui/TicketCard';
+import Popup from './ui/Popup';
+import escapeHtml from './utils/escapeHtml';
 
 export class KanbanView {
     constructor(root, state, logger = null) {
@@ -7,6 +9,7 @@ export class KanbanView {
         this.state = state;
         this.sortables = new Map();
         this.logger = logger;
+    this.popup = new Popup();
         this.render();
     }
     #colIdFromList(el) { return el?.closest('.col')?.dataset.colId; }
@@ -86,6 +89,26 @@ export class KanbanView {
         }
     }
     createCardElement(ticket) {
-        return new TicketCard(ticket).render();
+        return new TicketCard(ticket, {
+            onClick: (id, el, data) => {
+                this.logger?.debug('ticket.click', { id });
+                this.popup.open({
+                    title: data?.title || 'Ticket',
+                    content: () => {
+                        const wrap = document.createElement('div');
+                        wrap.innerHTML = `
+                            <div style="display:grid; gap:8px;">
+                              <div><strong>Catégorie:</strong> ${data?.category ?? '-'}</div>
+                              <div><strong>Label:</strong> ${data?.label ?? '-'}</div>
+                              <div><strong>Auteur:</strong> ${data?.author ?? '-'}</div>
+                              <div><strong>Créé le:</strong> ${new Date(data?.createdAt||Date.now()).toLocaleString()}</div>
+                              ${data?.description ? `<div><strong>Description:</strong><br/>${escapeHtml(String(data.description))}</div>` : ''}
+                            </div>
+                        `;
+                        return wrap;
+                    }
+                });
+            }
+        }).render();
     }
 }
