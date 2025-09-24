@@ -2,6 +2,7 @@ import Sortable from 'sortablejs';
 import TicketCard from './ui/TicketCard';
 import Popup from './ui/Popup';
 import escapeHtml from './utils/escapeHtml';
+import NewTicketForm from './ui/NewTicketForm';
 
 export class KanbanView {
     constructor(root, state, logger = null) {
@@ -61,28 +62,40 @@ export class KanbanView {
             this.sortables.set(col.id, sortable);
 
             section.querySelector('[data-add]')?.addEventListener('click', async () => {
-                const title = prompt('Titre de la carte:');
-                if (!title) return;
-                const description = prompt('Description (optionnelle):') || null;
-                const author = prompt('Auteur (optionnel):') || null;
-                const complexity = prompt('Complexité (xs/s/m/l/xl - optionnel):') || null;
-                const labels = [null, 'blue', 'green', 'orange'];
-                const categories = [null, 'bug', 'feature', 'docs', 'chore'];
-                const ticket = { id: undefined, title, description, author, taxonomies: {
-                    label: labels[Math.floor(Math.random()*labels.length)],
-                    category: categories[Math.floor(Math.random()*categories.length)],
-                    complexity
-                }, createdAt: Date.now() };
-                this.logger?.debug('view.addTicket', { columnId: col.id, ticket });
-                await this.state.addTicket(col.id, ticket);
-                // Find the just-added ticket (at index 0)
-                const added = this.state.columns.find(c => c.id === col.id)?.tickets[0] ?? ticket;
-                const el = this.createCardElement(added);
-                list.prepend(el);
-                // place focus on the added card for keyboard users
-                el.setAttribute('tabindex', '-1');
-                el.focus({ preventScroll: true });
-                this.updateCounts();
+                const form = NewTicketForm();
+                this.popup.open({
+                    title: 'Créer un ticket',
+                    content: () => {
+                        setTimeout(() => {
+                            form.el.addEventListener('submit', async (e) => {
+                                e.preventDefault();
+                                if (!form.el.checkValidity?.() && form.el.reportValidity) {
+                                    form.el.reportValidity();
+                                    return;
+                                }
+                                const data = form.getData();
+                                const ticket = {
+                                    id: undefined,
+                                    title: data.title,
+                                    description: data.description,
+                                    author: data.author,
+                                    taxonomies: data.taxonomies,
+                                    createdAt: Date.now(),
+                                };
+                                this.logger?.debug('view.addTicket', { columnId: col.id, ticket });
+                                await this.state.addTicket(col.id, ticket);
+                                const added = this.state.columns.find(c => c.id === col.id)?.tickets[0] ?? ticket;
+                                const elCard = this.createCardElement(added);
+                                list.prepend(elCard);
+                                elCard.setAttribute('tabindex', '-1');
+                                elCard.focus({ preventScroll: true });
+                                this.updateCounts();
+                                this.popup.close();
+                            }, { once: true });
+                        });
+                        return form.el;
+                    }
+                });
             });
         }
     }
