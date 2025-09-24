@@ -7,6 +7,28 @@ import escapeHtml from '../utils/escapeHtml';
 export default function NewTicketForm() {
   const el = document.createElement('form');
   el.className = 'ticket-form';
+  // Config for taxonomy rendering without repetition
+  const TAXO_ORDER = ['complexity', 'category', 'label'];
+  const TAXO_LABELS = { complexity: 'Complexité', category: 'Catégorie', label: 'Couleur' };
+  const renderSelect = (key) => {
+    const values = Array.from(ALLOWED_TAXONOMIES[key]).filter(Boolean);
+    const options = ['<option value="">--</option>'].concat(
+      values.map(v => `<option value="${v}">${key === 'category' ? escapeHtml(v) : String(v).toUpperCase()}</option>`) 
+    ).join('');
+    return `
+      <label class="tf-field">
+        <span class="tf-label">${TAXO_LABELS[key] || key}</span>
+        <select class="tf-input" name="${key}">${options}</select>
+      </label>
+    `;
+  };
+  const selects = TAXO_ORDER.map(renderSelect);
+  const firstSelect = selects.shift();
+  const rowsAfter = [];
+  for (let i = 0; i < selects.length; i += 2) {
+    rowsAfter.push(`<div class="tf-row">${selects[i] || ''}${selects[i+1] || ''}</div>`);
+  }
+
   el.innerHTML = `
     <div class="tf-grid">
       <label class="tf-field">
@@ -22,30 +44,9 @@ export default function NewTicketForm() {
           <span class="tf-label">Auteur</span>
           <input class="tf-input" name="author" type="text" placeholder="Votre nom (optionnel)">
         </label>
-        <label class="tf-field">
-          <span class="tf-label">Complexité</span>
-          <select class="tf-input" name="complexity">
-            <option value="">--</option>
-            ${Array.from(ALLOWED_TAXONOMIES.complexity).filter(Boolean).map(v => `<option value="${v}">${v.toUpperCase()}</option>`).join('')}
-          </select>
-        </label>
+        ${firstSelect || ''}
       </div>
-      <div class="tf-row">
-        <label class="tf-field">
-          <span class="tf-label">Catégorie</span>
-          <select class="tf-input" name="category">
-            <option value="">--</option>
-            ${Array.from(ALLOWED_TAXONOMIES.category).filter(Boolean).map(v => `<option value="${v}">${escapeHtml(v)}</option>`).join('')}
-          </select>
-        </label>
-        <label class="tf-field">
-          <span class="tf-label">Couleur</span>
-          <select class="tf-input" name="label">
-            <option value="">--</option>
-            ${Array.from(ALLOWED_TAXONOMIES.label).filter(Boolean).map(v => `<option value="${v}">${v.toUpperCase()}</option>`).join('')}
-          </select>
-        </label>
-      </div>
+      ${rowsAfter.join('')}
       <div class="tf-actions">
         <button type="submit" class="btn">Créer</button>
       </div>
@@ -57,12 +58,12 @@ export default function NewTicketForm() {
     const title = String(fd.get('title') || '').trim();
     const description = String(fd.get('description') || '').trim() || null;
     const author = String(fd.get('author') || '').trim() || null;
-    const tx = {
-      complexity: (fd.get('complexity') || null) || null,
-      category: (fd.get('category') || null) || null,
-      label: (fd.get('label') || null) || null,
-    };
-    return { title, description, author, taxonomies: tx };
+    const taxonomies = TAXO_ORDER.reduce((acc, key) => {
+      const val = fd.get(key);
+      acc[key] = val ? String(val) : null;
+      return acc;
+    }, {});
+    return { title, description, author, taxonomies };
   }
 
   return { el, getData };
