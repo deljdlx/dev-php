@@ -3,20 +3,20 @@ import escapeHtml from '../utils/escapeHtml';
 /**
  * NewTicketForm renders a form for creating a ticket and returns {el, getData}
  */
-export default function NewTicketForm({ getOptions, getKeys } = { getOptions: (k) => [], getKeys: () => [] }) {
+export default function NewTicketForm({ getOptions, getKeys, getMeta } = { getOptions: (k) => [], getKeys: () => [], getMeta: (k) => ({ label: k, options: [] }) }) {
   const el = document.createElement('form');
   el.className = 'ticket-form';
   // Config for taxonomy rendering without repetition
   const taxoKeys = (getKeys?.() || []).filter(Boolean);
-  const TAXO_LABELS = { complexity: 'Complexité', category: 'Catégorie', label: 'Couleur' };
   const renderSelect = (key) => {
-    const values = (getOptions?.(key) || []).filter(Boolean);
+    const meta = getMeta?.(key) || { label: key, options: [] };
+    const values = (meta.options || getOptions?.(key) || []).filter(Boolean);
     const options = ['<option value="">--</option>'].concat(
       values.map(v => `<option value="${v}">${key === 'category' ? escapeHtml(v) : String(v).toUpperCase()}</option>`) 
     ).join('');
     return `
       <label class="tf-field">
-        <span class="tf-label">${TAXO_LABELS[key] || key}</span>
+        <span class="tf-label">${escapeHtml(String(meta.label || key))}</span>
         <select class="tf-input" name="${key}">${options}</select>
       </label>
     `;

@@ -27,11 +27,27 @@ class KanbanState {
     await this.loadAll();
     }
     getTaxonomyOptions(key) {
-        const set = this.board?.taxonomies?.[key];
-        return set ? Array.from(set) : [];
+        const meta = this.board?.taxonomies?.[key];
+        if (!meta) return [];
+        if (meta instanceof Set) return Array.from(meta);
+        const opts = meta.options || [];
+        return Array.isArray(opts) ? opts : Array.from(opts);
+    }
+    getTaxonomyMeta(key) {
+        const meta = this.board?.taxonomies?.[key];
+        if (!meta) return { label: key, options: [] };
+        if (meta instanceof Set) return { label: key, options: Array.from(meta) };
+        return { label: meta.label || key, options: Array.isArray(meta.options) ? meta.options : Array.from(meta.options || []) };
     }
     getAllowedMap() {
-        return this.board?.taxonomies || {};
+        // Build a map key -> Set(options) for sanitization
+        const src = this.board?.taxonomies || {};
+        const out = {};
+        for (const [k, v] of Object.entries(src)) {
+            if (v instanceof Set) out[k] = v;
+            else if (v && (Array.isArray(v.options) || v.options instanceof Set)) out[k] = new Set(Array.isArray(v.options) ? v.options : Array.from(v.options));
+        }
+        return out;
     }
     getTaxonomyKeys() {
         return Object.keys(this.board?.taxonomies || {});
@@ -41,10 +57,16 @@ class KanbanState {
         // Load board meta first if available
         if (typeof this.dataSource.getBoardMeta === 'function') {
             const board = await this.dataSource.getBoardMeta();
-            // normalize sets
+            // normalize taxonomies to { key: {label, options[]} }
             const tx = {};
-            for (const [k, arr] of Object.entries(board?.taxonomies || {})) {
-                tx[k] = new Set(Array.isArray(arr) ? arr : []);
+            for (const [k, v] of Object.entries(board?.taxonomies || {})) {
+                if (v && typeof v === 'object' && (Array.isArray(v.options) || v.options instanceof Set)) {
+                    tx[k] = { label: v.label || k, options: Array.isArray(v.options) ? v.options : Array.from(v.options) };
+                } else if (Array.isArray(v)) {
+                    tx[k] = { label: k, options: v };
+                } else if (v instanceof Set) {
+                    tx[k] = { label: k, options: Array.from(v) };
+                }
             }
             this.board = { taxonomies: tx };
         }
@@ -79,7 +101,15 @@ class KanbanState {
             if (typeof this.dataSource.getBoardMeta === 'function') {
                 const board = await this.dataSource.getBoardMeta();
                 const tx = {};
-                for (const [k, arr] of Object.entries(board?.taxonomies || {})) tx[k] = new Set(Array.isArray(arr) ? arr : []);
+                for (const [k, v] of Object.entries(board?.taxonomies || {})) {
+                    if (v && typeof v === 'object' && (Array.isArray(v.options) || v.options instanceof Set)) {
+                        tx[k] = { label: v.label || k, options: Array.isArray(v.options) ? v.options : Array.from(v.options) };
+                    } else if (Array.isArray(v)) {
+                        tx[k] = { label: k, options: v };
+                    } else if (v instanceof Set) {
+                        tx[k] = { label: k, options: Array.from(v) };
+                    }
+                }
                 this.board = { taxonomies: tx };
             }
             this.columns = await this.dataSource.getColumns();

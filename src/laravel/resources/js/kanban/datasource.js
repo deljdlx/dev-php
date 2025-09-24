@@ -1,6 +1,28 @@
 import Column from './models/Column';
 import { ALLOWED_TAXONOMIES } from './utils/taxonomies';
 
+function defaultBoardMeta() {
+  const LABELS = { label: 'Couleur', category: 'Catégorie', complexity: 'Complexité' };
+  const taxonomies = Object.fromEntries(
+    Object.entries(ALLOWED_TAXONOMIES).map(([k, set]) => [k, { label: LABELS[k] || k, options: Array.from(set) }])
+  );
+  return { taxonomies };
+}
+
+function normalizeBoardMeta(meta) {
+  const labelsFallback = { label: 'Couleur', category: 'Catégorie', complexity: 'Complexité' };
+  const src = meta?.taxonomies || {};
+  const out = {};
+  for (const [k, v] of Object.entries(src)) {
+    if (v && typeof v === 'object' && (Array.isArray(v.options) || v.options instanceof Set)) {
+      out[k] = { label: v.label || labelsFallback[k] || k, options: Array.isArray(v.options) ? v.options : Array.from(v.options) };
+    } else if (Array.isArray(v) || v instanceof Set) {
+      out[k] = { label: labelsFallback[k] || k, options: Array.isArray(v) ? v : Array.from(v) };
+    }
+  }
+  return { taxonomies: out };
+}
+
 /**
  * DemoDataSource: loads columns from localStorage when available,
  * otherwise uses a factory to generate demo data and persists it.
@@ -19,26 +41,22 @@ export class DemoDataSource {
   async #ensureSeed() {
     const existing = this.#read();
     if (existing && Array.isArray(existing.columns)) {
-      // Backfill board meta if missing
-      if (!existing.board || !existing.board.taxonomies) {
-        existing.board = { taxonomies: Object.fromEntries(Object.entries(ALLOWED_TAXONOMIES).map(([k, set]) => [k, Array.from(set)])) };
-        localStorage.setItem(this.storageKey, JSON.stringify(existing));
-      }
-      return existing;
+      // Backfill/normalize board meta
+      const normalized = normalizeBoardMeta(existing.board || defaultBoardMeta());
+      const dto = { board: normalized, columns: existing.columns };
+      localStorage.setItem(this.storageKey, JSON.stringify(dto));
+      return dto;
     }
     // Seed using factory; supports both legacy Array and new Object shape
     const seededFromFactory = this.factory?.();
     let data;
     if (Array.isArray(seededFromFactory)) {
-      data = {
-        board: { taxonomies: Object.fromEntries(Object.entries(ALLOWED_TAXONOMIES).map(([k, set]) => [k, Array.from(set)])) },
-        columns: seededFromFactory,
-      };
+      data = { board: defaultBoardMeta(), columns: seededFromFactory };
     } else if (seededFromFactory && typeof seededFromFactory === 'object') {
-      const board = seededFromFactory.board || { taxonomies: Object.fromEntries(Object.entries(ALLOWED_TAXONOMIES).map(([k, set]) => [k, Array.from(set)])) };
+      const board = normalizeBoardMeta(seededFromFactory.board || defaultBoardMeta());
       data = { board, columns: seededFromFactory.columns || [] };
     } else {
-      data = { board: { taxonomies: Object.fromEntries(Object.entries(ALLOWED_TAXONOMIES).map(([k, set]) => [k, Array.from(set)])) }, columns: [] };
+      data = { board: defaultBoardMeta(), columns: [] };
     }
     // Persist seed
     localStorage.setItem(this.storageKey, JSON.stringify({ board: data.board, columns: data.columns.map(c => (typeof c.toJSON === 'function' ? c.toJSON() : c)) }));
@@ -54,7 +72,7 @@ export class DemoDataSource {
   // New: board meta (taxonomies etc.)
   async getBoardMeta() {
     const data = await this.#ensureSeed();
-    const meta = data.board || { taxonomies: Object.fromEntries(Object.entries(ALLOWED_TAXONOMIES).map(([k, set]) => [k, Array.from(set)])) };
+  const meta = data.board || defaultBoardMeta();
     this.logger?.debug('getBoardMeta ->', meta);
     return meta;
   }
@@ -75,7 +93,7 @@ export class DemoDataSource {
     // Persist as plain DTOs and preserve board meta
     const existing = (this.#read() || {});
     const dto = {
-      board: existing.board || { taxonomies: Object.fromEntries(Object.entries(ALLOWED_TAXONOMIES).map(([k, set]) => [k, Array.from(set)])) },
+      board: existing.board || defaultBoardMeta(),
       columns: columns.map(c => (typeof c.toJSON === 'function' ? c.toJSON() : c)),
     };
     localStorage.setItem(this.storageKey, JSON.stringify(dto));
@@ -84,7 +102,7 @@ export class DemoDataSource {
   async setBoardMeta(board) {
     const existing = (this.#read() || {});
     const dto = {
-      board: board || existing.board,
+      board: board ? normalizeBoardMeta(board) : existing.board,
       columns: existing.columns || [],
     };
     localStorage.setItem(this.storageKey, JSON.stringify(dto));

@@ -18,7 +18,7 @@ import NewTicketForm from './ui/NewTicketForm';
 
     // Open popup with the NewTicketForm and create a ticket on submit
     document.getElementById('createTicket')?.addEventListener('click', () => {
-        const form = NewTicketForm({ getOptions: (k) => state.getTaxonomyOptions(k), getKeys: () => state.getTaxonomyKeys() });
+    const form = NewTicketForm({ getOptions: (k) => state.getTaxonomyOptions(k), getKeys: () => state.getTaxonomyKeys(), getMeta: (k) => state.getTaxonomyMeta(k) });
         view.popup.open({
             title: 'Créer un ticket',
             content: () => {

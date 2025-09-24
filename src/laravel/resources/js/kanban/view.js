@@ -62,7 +62,7 @@ export class KanbanView {
             this.sortables.set(col.id, sortable);
 
             section.querySelector('[data-add]')?.addEventListener('click', async () => {
-                const form = NewTicketForm({ getOptions: (k) => this.state.getTaxonomyOptions(k), getKeys: () => this.state.getTaxonomyKeys() });
+                const form = NewTicketForm({ getOptions: (k) => this.state.getTaxonomyOptions(k), getKeys: () => this.state.getTaxonomyKeys(), getMeta: (k) => this.state.getTaxonomyMeta(k) });
                 this.popup.open({
                     title: 'Créer un ticket',
                     content: () => {
