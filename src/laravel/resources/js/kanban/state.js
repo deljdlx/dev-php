@@ -162,11 +162,17 @@ class KanbanState {
         } else if (newData && typeof newData === 'object') {
             const board = newData.board;
             if (board && board.taxonomies) {
+                // Normalize incoming board meta to { key: {label, options:[{key,label}] } }
                 const tx = {};
-                for (const [k, arr] of Object.entries(board.taxonomies)) tx[k] = new Set(Array.isArray(arr) ? arr : []);
+                for (const [k, v] of Object.entries(board.taxonomies)) {
+                    const label = v?.label || k;
+                    const arr = Array.isArray(v?.options) ? v.options : (Array.isArray(v) ? v : []);
+                    const options = arr.map(o => (typeof o === 'object' && o && 'key' in o) ? o : { key: String(o), label: String(o) });
+                    tx[k] = { label, options };
+                }
                 this.board = { taxonomies: tx };
                 if (typeof this.dataSource.setBoardMeta === 'function') {
-                    await this.dataSource.setBoardMeta({ taxonomies: Object.fromEntries(Object.entries(this.board.taxonomies).map(([k, set]) => [k, Array.from(set)])) });
+                    await this.dataSource.setBoardMeta({ taxonomies: tx });
                 }
             }
             this.columns = (newData.columns || []).map(c => c instanceof Column ? c : new Column(c));

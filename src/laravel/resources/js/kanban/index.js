@@ -66,7 +66,8 @@ import NewTicketForm from './ui/NewTicketForm';
         const taxonomies = {};
         for (const key of state.getTaxonomyKeys()) {
             const opts = state.getTaxonomyOptions(key) || [];
-            taxonomies[key] = Math.random() < 0.25 ? null : (opts.length ? opts[Math.floor(Math.random()*opts.length)] : null);
+            const picked = (opts.length ? opts[Math.floor(Math.random()*opts.length)] : null);
+            taxonomies[key] = Math.random() < 0.25 ? null : (picked ? picked.key : null);
         }
         const descs = ['Ticket généré pour test', 'Lorem ipsum dolor sit amet', 'Voir backlog pour contexte', 'Petite tâche technique'];
         const authors = ['Alice', 'Bob', 'Chloé', 'David'];
