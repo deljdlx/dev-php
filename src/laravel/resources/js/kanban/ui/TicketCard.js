@@ -35,20 +35,20 @@ class TicketCard {
     el.setAttribute('role', 'listitem');
     el.setAttribute('aria-label', this.ticket.title);
 
-  const labelHtml = this.ticket.label
-      ? `<span class="label ${this.ticket.label}">${escapeHtml(String(this.ticket.label).toUpperCase())}</span>`
-      : '';
-
-      
-
-
-  const categoryHtml = this.ticket.category
-      ? `<span class="category cat-${this.ticket.category}">${escapeHtml(String(this.ticket.category))}</span>`
-      : '';
+  // Build dynamic taxonomy chips with backward-compatible classes for known keys
+  const tx = this.ticket.taxonomies || {};
+  const chips = [];
+  for (const [k, v] of Object.entries(tx)) {
+    if (v == null || v === '') continue;
+    const key = String(k);
+    const val = String(v);
+    if (key === 'label') chips.push(`<span class="label ${val}">${escapeHtml(val.toUpperCase())}</span>`);
+    else if (key === 'category') chips.push(`<span class="category cat-${val}">${escapeHtml(val)}</span>`);
+    else if (key === 'complexity') chips.push(`<span class="complexity complexity-${val.toLowerCase()}">${escapeHtml(val.toUpperCase())}</span>`);
+    else chips.push(`<span class="taxo-chip taxo-${escapeHtml(key)} taxo-${escapeHtml(key)}-${escapeHtml(val)}">${escapeHtml(val)}</span>`);
+  }
 
   const descHtml = this.ticket.description ? `<div class="card-desc">${escapeHtml(this.ticket.description)}</div>` : '';
-  const complexity = this.ticket.complexity ? String(this.ticket.complexity).toLowerCase() : null;
-  const complexityHtml = complexity ? `<span class="complexity complexity-${complexity}">${escapeHtml(complexity.toUpperCase())}</span>` : '';
 
   el.innerHTML = `
       <div class="card-title">${escapeHtml(this.ticket.title)}</div>
@@ -56,9 +56,7 @@ class TicketCard {
       <div class="card-meta">
     <span>${formatTicketDate(this.ticket.createdAt)}</span>
   ${this.ticket.author ? `<span class="author">${escapeHtml(this.ticket.author)}</span>` : ''}
-    ${complexityHtml}
-        ${labelHtml}
-        ${categoryHtml}
+    ${chips.join(' ')}
       </div>
     `;
 

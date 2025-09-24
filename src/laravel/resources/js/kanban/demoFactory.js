@@ -13,25 +13,29 @@ function demoFactory() {
     'Voir la PR précédente pour le contexte.',
     'Ajouter des tests unitaires minimaux.',
   ];
+
   const authors = ['Alice', 'Bob', 'Chloé', 'David'];
-  const complexities = ['xs','s','m','l','xl'];
   const board = {
     taxonomies: {
-      label: ['blue','green','orange'],
-      category: ['bug','feature','docs','chore'],
-      complexity: ['xs','s','m','l','xl'],
+      label: { label: 'Couleur', options: ['blue','green','orange'] },
+      category: { label: 'Catégorie', options: ['bug','feature','docs','chore'] },
+      complexity: { label: 'Complexité', options: ['xs','s','m','l','xl'] },
     }
   };
-  const mk = (n) => Array.from({length:n}, () => new Ticket({
-    title: pick(sampleTitles) + ' #' + Math.floor(Math.random()*900+100),
-    description: pick(sampleDescs),
-    author: pick(authors),
-    taxonomies: {
-      label: pick([null,'blue','green','orange']),
-      category: pick([null,'bug','feature','docs','chore']),
-      complexity: pick(complexities),
-    },
-  }));
+  const mk = (n) => Array.from({length:n}, () => {
+    const chosen = {};
+    for (const [key, meta] of Object.entries(board.taxonomies)) {
+      const opts = Array.isArray(meta?.options) ? meta.options : [];
+      // 25% chance to be null, else pick a valid option if available
+      chosen[key] = Math.random() < 0.25 ? null : (opts.length ? pick(opts) : null);
+    }
+    return new Ticket({
+      title: pick(sampleTitles) + ' #' + Math.floor(Math.random()*900+100),
+      description: pick(sampleDescs),
+      author: pick(authors),
+      taxonomies: chosen,
+    });
+  });
   const columns = [
     new Column({ id:'todo',   name:'À faire',     tickets: mk(4) }),
     new Column({ id:'doing',  name:'En cours',    tickets: mk(3) }),

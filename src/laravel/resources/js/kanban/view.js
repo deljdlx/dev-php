@@ -114,36 +114,39 @@ export class KanbanView {
                     title: data?.title || 'Ticket',
                     content: () => {
                         const wrap = document.createElement('div');
-                                                wrap.innerHTML = `
-                                                        <div class="ticket-details">
-                                                            <div class="ticket-field ticket-category">
-                                                                <span class="field-label">Catégorie:</span>
-                                                                <span class="field-value">${(data?.taxonomies?.category ?? data?.category) ? `<span class=\"category cat-${(data.taxonomies?.category || data.category)}\">${escapeHtml(String(data.taxonomies?.category || data.category))}</span>` : '-'}</span>
-                                                            </div>
-                                                            <div class="ticket-field ticket-label">
-                                                                <span class="field-label">Label:</span>
-                                                                <span class="field-value">${(data?.taxonomies?.label ?? data?.label) ? `<span class=\"label ${(data.taxonomies?.label || data.label)}\">${escapeHtml(String(data.taxonomies?.label || data.label).toUpperCase())}</span>` : '-'}</span>
-                                                            </div>
-                                                            <div class="ticket-field ticket-author">
-                                                                <span class="field-label">Auteur:</span>
-                                                                <span class="field-value">${data?.author ? escapeHtml(String(data.author)) : '-'}</span>
-                                                            </div>
-                                                            <div class="ticket-field ticket-complexity">
-                                                                <span class="field-label">Complexité:</span>
-                                                                <span class="field-value">${(data?.taxonomies?.complexity ?? data?.complexity) ? `<span class=\"complexity complexity-${String((data.taxonomies?.complexity || data.complexity)).toLowerCase()}\">${escapeHtml(String((data.taxonomies?.complexity || data.complexity)).toUpperCase())}</span>` : '-'}</span>
-                                                            </div>
-                                                            <div class="ticket-field ticket-created">
-                                                                <span class="field-label">Créé le:</span>
-                                                                <span class="field-value">${escapeHtml(new Date(data?.createdAt||Date.now()).toLocaleString())}</span>
-                                                            </div>
-                                                            ${data?.description ? `
-                                                                <div class=\"ticket-field ticket-description\">
-                                                                    <span class=\"field-label\">Description:</span>
-                                                                    <div class=\"field-value\">${escapeHtml(String(data.description))}</div>
-                                                                </div>
-                                                            ` : ''}
-                                                        </div>
-                                                `;
+                        const buildTaxoField = (key, val) => {
+                            if (val == null || val === '') return '';
+                            if (key === 'label') return `<span class=\"label ${val}\">${escapeHtml(String(val).toUpperCase())}</span>`;
+                            if (key === 'category') return `<span class=\"category cat-${val}\">${escapeHtml(String(val))}</span>`;
+                            if (key === 'complexity') return `<span class=\"complexity complexity-${String(val).toLowerCase()}\">${escapeHtml(String(val).toUpperCase())}</span>`;
+                            return `<span class=\"taxo-chip taxo-${escapeHtml(String(key))} taxo-${escapeHtml(String(key))}-${escapeHtml(String(val))}\">${escapeHtml(String(val))}</span>`;
+                        };
+                        const tx = data?.taxonomies || {};
+                        const txRows = Object.entries(tx).map(([k, v]) => {
+                            const chip = buildTaxoField(k, v);
+                            if (!chip) return '';
+                            const label = escapeHtml(String(this.state.getTaxonomyMeta?.(k)?.label || k));
+                            return `<div class=\"ticket-field ticket-taxo-${escapeHtml(String(k))}\"><span class=\"field-label\">${label}:</span><span class=\"field-value\">${chip}</span></div>`;
+                        }).join('');
+                        wrap.innerHTML = `
+                            <div class=\"ticket-details\">
+                                <div class=\"ticket-field ticket-author\">
+                                    <span class=\"field-label\">Auteur:</span>
+                                    <span class=\"field-value\">${data?.author ? escapeHtml(String(data.author)) : '-'}</span>
+                                </div>
+                                ${txRows}
+                                <div class=\"ticket-field ticket-created\">
+                                    <span class=\"field-label\">Créé le:</span>
+                                    <span class=\"field-value\">${escapeHtml(new Date(data?.createdAt||Date.now()).toLocaleString())}</span>
+                                </div>
+                                ${data?.description ? `
+                                    <div class=\"ticket-field ticket-description\">
+                                        <span class=\"field-label\">Description:</span>
+                                        <div class=\"field-value\">${escapeHtml(String(data.description))}</div>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        `;
                         return wrap;
                     }
                 });

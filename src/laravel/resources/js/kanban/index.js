@@ -62,21 +62,20 @@ import NewTicketForm from './ui/NewTicketForm';
 
     document.getElementById('addRandom')?.addEventListener('click', async () => {
         const first = state.columns[0];
-        const labels = ['blue','green','orange',null];
-        const categories = ['bug','feature','docs','chore'];
+        // Build random taxonomies dynamically from board
+        const taxonomies = {};
+        for (const key of state.getTaxonomyKeys()) {
+            const opts = state.getTaxonomyOptions(key) || [];
+            taxonomies[key] = Math.random() < 0.25 ? null : (opts.length ? opts[Math.floor(Math.random()*opts.length)] : null);
+        }
         const descs = ['Ticket généré pour test', 'Lorem ipsum dolor sit amet', 'Voir backlog pour contexte', 'Petite tâche technique'];
         const authors = ['Alice', 'Bob', 'Chloé', 'David'];
-        const complexities = ['xs','s','m','l','xl'];
         const ticket = {
             id: undefined,
             title: 'Tâche aléatoire ' + Math.floor(Math.random()*1000),
             description: descs[Math.floor(Math.random()*descs.length)],
             author: authors[Math.floor(Math.random()*authors.length)],
-            taxonomies: {
-                label: labels[Math.floor(Math.random()*labels.length)],
-                category: categories[Math.floor(Math.random()*categories.length)],
-                complexity: complexities[Math.floor(Math.random()*complexities.length)],
-            },
+            taxonomies,
             createdAt: Date.now()
         };
         logger.debug('index.addRandom', { columnId: first.id, ticket });
