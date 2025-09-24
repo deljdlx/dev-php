@@ -15,20 +15,30 @@ function demoFactory() {
   ];
   const authors = ['Alice', 'Bob', 'Chloé', 'David'];
   const complexities = ['xs','s','m','l','xl'];
+  const board = {
+    taxonomies: {
+      label: ['blue','green','orange'],
+      category: ['bug','feature','docs','chore'],
+      complexity: ['xs','s','m','l','xl'],
+    }
+  };
   const mk = (n) => Array.from({length:n}, () => new Ticket({
-  title: pick(sampleTitles) + ' #' + Math.floor(Math.random()*900+100),
-  label: pick([null,'blue','green','orange']),
-    category: pick([null,'bug','feature','docs','chore']),
+    title: pick(sampleTitles) + ' #' + Math.floor(Math.random()*900+100),
     description: pick(sampleDescs),
-  author: pick(authors),
-  complexity: pick(complexities)
+    author: pick(authors),
+    taxonomies: {
+      label: pick([null,'blue','green','orange']),
+      category: pick([null,'bug','feature','docs','chore']),
+      complexity: pick(complexities),
+    },
   }));
-  return [
+  const columns = [
     new Column({ id:'todo',   name:'À faire',     tickets: mk(4) }),
     new Column({ id:'doing',  name:'En cours',    tickets: mk(3) }),
     new Column({ id:'review', name:'En revue',    tickets: mk(2) }),
     new Column({ id:'done',   name:'Terminé',     tickets: mk(3) }),
   ];
+  return { board, columns };
 }
 
 export default demoFactory;

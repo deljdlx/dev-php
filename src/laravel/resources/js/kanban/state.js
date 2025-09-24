@@ -1,6 +1,6 @@
 import Column from './models/Column';
 import Ticket from './models/Ticket';
-import { sanitizeTaxonomies, legacyToTaxonomies } from './utils/taxonomies';
+import { sanitizeTaxonomies, legacyToTaxonomies, ALLOWED_TAXONOMIES } from './utils/taxonomies';
 
 class KanbanState {
     /**
@@ -10,6 +10,7 @@ class KanbanState {
     constructor(dataSource, options = {}) {
         this.dataSource = dataSource;
         this.columns = [];
+    this.board = { taxonomies: Object.fromEntries(Object.entries(ALLOWED_TAXONOMIES).map(([k, set]) => [k, new Set(set)])) };
         // Default persistence calls the data source as before; can be overridden via options or setPersist()
     this.#persistHandler = options.persist || (async (columns) => {
             await this.dataSource.save(columns);
@@ -25,8 +26,28 @@ class KanbanState {
     this.logger?.debug('state.load()');
     await this.loadAll();
     }
+    getTaxonomyOptions(key) {
+        const set = this.board?.taxonomies?.[key];
+        return set ? Array.from(set) : [];
+    }
+    getAllowedMap() {
+        return this.board?.taxonomies || {};
+    }
+    getTaxonomyKeys() {
+        return Object.keys(this.board?.taxonomies || {});
+    }
     async loadColumns() {
     this.logger?.debug('state.loadColumns()');
+        // Load board meta first if available
+        if (typeof this.dataSource.getBoardMeta === 'function') {
+            const board = await this.dataSource.getBoardMeta();
+            // normalize sets
+            const tx = {};
+            for (const [k, arr] of Object.entries(board?.taxonomies || {})) {
+                tx[k] = new Set(Array.isArray(arr) ? arr : []);
+            }
+            this.board = { taxonomies: tx };
+        }
         const meta = await (this.dataSource.getColumnsMeta?.() ?? this.dataSource.getColumns());
         // normalize to Column[] with empty tickets
         this.columns = meta.map(c => new Column({ id: c.id, name: c.name, tickets: [] }));
@@ -37,9 +58,10 @@ class KanbanState {
         const col = this.columns.find(c => c.id === columnId);
         if (!col) return;
         const tickets = await (this.dataSource.getTicketsByColumnId?.(columnId));
-        if (Array.isArray(tickets)) {
+    if (Array.isArray(tickets)) {
             col.tickets = tickets.map(t => {
-                const tx = t.taxonomies ? sanitizeTaxonomies(t.taxonomies) : legacyToTaxonomies(t);
+        const allowed = this.getAllowedMap();
+        const tx = t.taxonomies ? sanitizeTaxonomies(t.taxonomies, allowed) : legacyToTaxonomies(t, allowed);
                 return new Ticket({ ...t, taxonomies: tx });
             });
         }
@@ -53,6 +75,13 @@ class KanbanState {
                 await this.loadTickets(c.id);
             }
         } else {
+            // When only getColumns() exists, try to get board meta explicitly
+            if (typeof this.dataSource.getBoardMeta === 'function') {
+                const board = await this.dataSource.getBoardMeta();
+                const tx = {};
+                for (const [k, arr] of Object.entries(board?.taxonomies || {})) tx[k] = new Set(Array.isArray(arr) ? arr : []);
+                this.board = { taxonomies: tx };
+            }
             this.columns = await this.dataSource.getColumns();
         }
     }
@@ -102,14 +131,31 @@ class KanbanState {
     this.logger?.debug('state.addTicket()', { columnId, ticket });
         const col = this.columns.find(c => c.id === columnId);
         if (!col) return;
-    const toAdd = ticket && ticket.id ? ticket : new Ticket({ ...(ticket || {}), taxonomies: sanitizeTaxonomies(ticket?.taxonomies || legacyToTaxonomies(ticket || {})) });
+    const allowed = this.getAllowedMap();
+    const toAdd = ticket && ticket.id ? ticket : new Ticket({ ...(ticket || {}), taxonomies: sanitizeTaxonomies(ticket?.taxonomies || legacyToTaxonomies(ticket || {}, allowed), allowed) });
         col.tickets.unshift(toAdd);
     await this.persist({ op: 'addTicket', columnId, ticket: (typeof toAdd.toJSON === 'function' ? toAdd.toJSON() : toAdd) });
     }
-    async reset(newCols) {
-    this.logger?.debug('state.reset()');
-        this.columns = (newCols || []).map(c => c instanceof Column ? c : new Column(c));
-    await this.persist({ op: 'reset' });
+    async reset(newData) {
+        // newData can be columns[] or { board, columns }
+        this.logger?.debug('state.reset()');
+        if (Array.isArray(newData)) {
+            this.columns = newData.map(c => c instanceof Column ? c : new Column(c));
+        } else if (newData && typeof newData === 'object') {
+            const board = newData.board;
+            if (board && board.taxonomies) {
+                const tx = {};
+                for (const [k, arr] of Object.entries(board.taxonomies)) tx[k] = new Set(Array.isArray(arr) ? arr : []);
+                this.board = { taxonomies: tx };
+                if (typeof this.dataSource.setBoardMeta === 'function') {
+                    await this.dataSource.setBoardMeta({ taxonomies: Object.fromEntries(Object.entries(this.board.taxonomies).map(([k, set]) => [k, Array.from(set)])) });
+                }
+            }
+            this.columns = (newData.columns || []).map(c => c instanceof Column ? c : new Column(c));
+        } else {
+            this.columns = [];
+        }
+        await this.persist({ op: 'reset' });
     }
 }
 export default KanbanState;

@@ -1,17 +1,16 @@
-import { ALLOWED_TAXONOMIES } from '../utils/taxonomies';
 import escapeHtml from '../utils/escapeHtml';
 
 /**
  * NewTicketForm renders a form for creating a ticket and returns {el, getData}
  */
-export default function NewTicketForm() {
+export default function NewTicketForm({ getOptions, getKeys } = { getOptions: (k) => [], getKeys: () => [] }) {
   const el = document.createElement('form');
   el.className = 'ticket-form';
   // Config for taxonomy rendering without repetition
-  const TAXO_ORDER = ['complexity', 'category', 'label'];
+  const taxoKeys = (getKeys?.() || []).filter(Boolean);
   const TAXO_LABELS = { complexity: 'Complexité', category: 'Catégorie', label: 'Couleur' };
   const renderSelect = (key) => {
-    const values = Array.from(ALLOWED_TAXONOMIES[key]).filter(Boolean);
+    const values = (getOptions?.(key) || []).filter(Boolean);
     const options = ['<option value="">--</option>'].concat(
       values.map(v => `<option value="${v}">${key === 'category' ? escapeHtml(v) : String(v).toUpperCase()}</option>`) 
     ).join('');
@@ -22,7 +21,7 @@ export default function NewTicketForm() {
       </label>
     `;
   };
-  const selects = TAXO_ORDER.map(renderSelect);
+  const selects = taxoKeys.map(renderSelect);
   const firstSelect = selects.shift();
   const rowsAfter = [];
   for (let i = 0; i < selects.length; i += 2) {
@@ -58,7 +57,7 @@ export default function NewTicketForm() {
     const title = String(fd.get('title') || '').trim();
     const description = String(fd.get('description') || '').trim() || null;
     const author = String(fd.get('author') || '').trim() || null;
-    const taxonomies = TAXO_ORDER.reduce((acc, key) => {
+  const taxonomies = (getKeys?.() || []).reduce((acc, key) => {
       const val = fd.get(key);
       acc[key] = val ? String(val) : null;
       return acc;

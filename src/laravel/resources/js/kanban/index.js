@@ -11,14 +11,14 @@ import NewTicketForm from './ui/NewTicketForm';
     const root = document.getElementById('kanban');
     if (!root) return;
     const logger = createLogger('Kanban');
-    const dataSource = new DemoDataSource(demoFactory, 'demo.kanban.v5', logger);
+    const dataSource = new DemoDataSource(demoFactory, 'demo.kanban.v6', logger);
     const state = new KanbanState(dataSource, { logger });
     await state.load();
     const view = new KanbanView(root, state, logger);
 
     // Open popup with the NewTicketForm and create a ticket on submit
     document.getElementById('createTicket')?.addEventListener('click', () => {
-        const form = NewTicketForm();
+        const form = NewTicketForm({ getOptions: (k) => state.getTaxonomyOptions(k), getKeys: () => state.getTaxonomyKeys() });
         view.popup.open({
             title: 'Créer un ticket',
             content: () => {

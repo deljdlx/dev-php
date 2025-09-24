@@ -1,4 +1,5 @@
 import Column from './models/Column';
+import { ALLOWED_TAXONOMIES } from './utils/taxonomies';
 
 /**
  * DemoDataSource: loads columns from localStorage when available,
@@ -17,17 +18,45 @@ export class DemoDataSource {
   }
   async #ensureSeed() {
     const existing = this.#read();
-    if (existing && Array.isArray(existing.columns)) return existing;
-    const seeded = { columns: this.factory() };
-    await this.save(seeded.columns);
-  this.logger?.debug('Seeded columns from factory');
-    return seeded;
+    if (existing && Array.isArray(existing.columns)) {
+      // Backfill board meta if missing
+      if (!existing.board || !existing.board.taxonomies) {
+        existing.board = { taxonomies: Object.fromEntries(Object.entries(ALLOWED_TAXONOMIES).map(([k, set]) => [k, Array.from(set)])) };
+        localStorage.setItem(this.storageKey, JSON.stringify(existing));
+      }
+      return existing;
+    }
+    // Seed using factory; supports both legacy Array and new Object shape
+    const seededFromFactory = this.factory?.();
+    let data;
+    if (Array.isArray(seededFromFactory)) {
+      data = {
+        board: { taxonomies: Object.fromEntries(Object.entries(ALLOWED_TAXONOMIES).map(([k, set]) => [k, Array.from(set)])) },
+        columns: seededFromFactory,
+      };
+    } else if (seededFromFactory && typeof seededFromFactory === 'object') {
+      const board = seededFromFactory.board || { taxonomies: Object.fromEntries(Object.entries(ALLOWED_TAXONOMIES).map(([k, set]) => [k, Array.from(set)])) };
+      data = { board, columns: seededFromFactory.columns || [] };
+    } else {
+      data = { board: { taxonomies: Object.fromEntries(Object.entries(ALLOWED_TAXONOMIES).map(([k, set]) => [k, Array.from(set)])) }, columns: [] };
+    }
+    // Persist seed
+    localStorage.setItem(this.storageKey, JSON.stringify({ board: data.board, columns: data.columns.map(c => (typeof c.toJSON === 'function' ? c.toJSON() : c)) }));
+    this.logger?.debug('Seeded board + columns from factory');
+    return data;
   }
   // Legacy full-columns loader (still available if needed)
   async getColumns() {
     const data = await this.#ensureSeed();
   this.logger?.debug('getColumns ->', data.columns);
     return data.columns.map(c => Column.fromJSON(c));
+  }
+  // New: board meta (taxonomies etc.)
+  async getBoardMeta() {
+    const data = await this.#ensureSeed();
+    const meta = data.board || { taxonomies: Object.fromEntries(Object.entries(ALLOWED_TAXONOMIES).map(([k, set]) => [k, Array.from(set)])) };
+    this.logger?.debug('getBoardMeta ->', meta);
+    return meta;
   }
   // New: only columns meta (id, name)
   async getColumnsMeta() {
@@ -43,9 +72,22 @@ export class DemoDataSource {
     return Array.isArray(col?.tickets) ? col.tickets : [];
   }
   async save(columns) {
-    // Persist as plain DTOs
-    const dto = { columns: columns.map(c => (typeof c.toJSON === 'function' ? c.toJSON() : c)) };
+    // Persist as plain DTOs and preserve board meta
+    const existing = (this.#read() || {});
+    const dto = {
+      board: existing.board || { taxonomies: Object.fromEntries(Object.entries(ALLOWED_TAXONOMIES).map(([k, set]) => [k, Array.from(set)])) },
+      columns: columns.map(c => (typeof c.toJSON === 'function' ? c.toJSON() : c)),
+    };
     localStorage.setItem(this.storageKey, JSON.stringify(dto));
-  this.logger?.debug('save columns', dto);
+    this.logger?.debug('save board+columns', dto);
+  }
+  async setBoardMeta(board) {
+    const existing = (this.#read() || {});
+    const dto = {
+      board: board || existing.board,
+      columns: existing.columns || [],
+    };
+    localStorage.setItem(this.storageKey, JSON.stringify(dto));
+    this.logger?.debug('setBoardMeta', dto.board);
   }
 }
