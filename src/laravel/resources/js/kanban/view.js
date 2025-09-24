@@ -96,15 +96,32 @@ export class KanbanView {
                     title: data?.title || 'Ticket',
                     content: () => {
                         const wrap = document.createElement('div');
-                        wrap.innerHTML = `
-                            <div style="display:grid; gap:8px;">
-                              <div><strong>Catégorie:</strong> ${data?.category ? `<span class="category cat-${data.category}">${escapeHtml(String(data.category))}</span>` : '-'}</div>
-                              <div><strong>Label:</strong> ${data?.label ? `<span class="label ${data.label}">${escapeHtml(String(data.label).toUpperCase())}</span>` : '-'}</div>
-                              <div><strong>Auteur:</strong> ${data?.author ?? '-'}</div>
-                              <div><strong>Créé le:</strong> ${new Date(data?.createdAt||Date.now()).toLocaleString()}</div>
-                              ${data?.description ? `<div><strong>Description:</strong><br/>${escapeHtml(String(data.description))}</div>` : ''}
-                            </div>
-                        `;
+                                                wrap.innerHTML = `
+                                                        <div class="ticket-details">
+                                                            <div class="ticket-field ticket-category">
+                                                                <span class="field-label">Catégorie:</span>
+                                                                <span class="field-value">${data?.category ? `<span class=\"category cat-${data.category}\">${escapeHtml(String(data.category))}</span>` : '-'}</span>
+                                                            </div>
+                                                            <div class="ticket-field ticket-label">
+                                                                <span class="field-label">Label:</span>
+                                                                <span class="field-value">${data?.label ? `<span class=\"label ${data.label}\">${escapeHtml(String(data.label).toUpperCase())}</span>` : '-'}</span>
+                                                            </div>
+                                                            <div class="ticket-field ticket-author">
+                                                                <span class="field-label">Auteur:</span>
+                                                                <span class="field-value">${data?.author ? escapeHtml(String(data.author)) : '-'}</span>
+                                                            </div>
+                                                            <div class="ticket-field ticket-created">
+                                                                <span class="field-label">Créé le:</span>
+                                                                <span class="field-value">${escapeHtml(new Date(data?.createdAt||Date.now()).toLocaleString())}</span>
+                                                            </div>
+                                                            ${data?.description ? `
+                                                                <div class=\"ticket-field ticket-description\">
+                                                                    <span class=\"field-label\">Description:</span>
+                                                                    <div class=\"field-value\">${escapeHtml(String(data.description))}</div>
+                                                                </div>
+                                                            ` : ''}
+                                                        </div>
+                                                `;
                         return wrap;
                     }
                 });
