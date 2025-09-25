@@ -4,6 +4,7 @@
  * - setItem(key, value): void
  * - removeItem(key): void
  * - has(key): boolean
+ * - clear(): void
  */
 export class LocalStorageStrategy {
   constructor(area = (typeof window !== 'undefined' ? window.localStorage : null)) {
@@ -21,6 +22,9 @@ export class LocalStorageStrategy {
   has(key) {
     try { return this.getItem(key) !== null; } catch { return false; }
   }
+  clear() {
+    try { this.area?.clear?.(); } catch {}
+  }
 }
 
 export class MemoryStorageStrategy {
@@ -29,6 +33,7 @@ export class MemoryStorageStrategy {
   setItem(key, value) { this.map.set(key, String(value)); }
   removeItem(key) { this.map.delete(key); }
   has(key) { return this.map.has(key); }
+  clear() { this.map.clear(); }
 }
 
 export function createDefaultStorage() {

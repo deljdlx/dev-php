@@ -354,12 +354,21 @@ export default class KanbanController {
   async resetBoard() {
     if (!confirm('Réinitialiser le board aux données de démo ?')) return;
     this.logger.debug('controller.resetBoard');
-    const cfg = demoFactory();
-    await this.state.reset(cfg);
-    this.view.dispose?.();
-    this.view = new KanbanView(this.root, this.state, this.logger);
-    this.initFilters();
-    this.hookViewFiltering();
+  // Clear all app storage (theme, filters, background image, demo data)
+  try { this.storage.clear(); } catch {}
+  // Remove any inline background style
+  document.body.style.backgroundImage = '';
+  document.body.classList.remove('has-custom-bg');
+  // Recreate dataSource with a fresh storage reference (same object, but data wiped)
+  this.dataSource = new DemoDataSource(demoFactory, 'demo.kanban.v6', this.logger, this.storage);
+  // Reset state by reloading demo factory
+  const cfg = demoFactory();
+  await this.state.reset(cfg);
+  // Rebuild the view
+  this.view.dispose?.();
+  this.view = new KanbanView(this.root, this.state, this.logger);
+  this.initFilters();
+  this.hookViewFiltering();
   }
 
   downloadJson() {
