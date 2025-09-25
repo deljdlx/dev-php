@@ -13,6 +13,8 @@ export default class KanbanController {
     this.state = new KanbanState(this.dataSource, { logger: this.logger });
     this.view = null;
     this.THEME_KEY = 'kanban.theme';
+  this.FILTER_LOGIC_KEY = 'kanban.filter.logic';
+  this._filterLogic = (localStorage.getItem(this.FILTER_LOGIC_KEY) === 'OR') ? 'OR' : 'AND';
   }
 
   async init() {
@@ -31,8 +33,42 @@ export default class KanbanController {
     if (!host) return;
     host.innerHTML = '';
     this._filters = {}; // key -> Set(allowed option keys) that are visible
+    // Add logic toggle (AND/OR)
+    const logicGroup = document.createElement('div');
+    logicGroup.className = 'filter-group';
+    const logicTitle = document.createElement('span');
+    logicTitle.className = 'filter-title';
+    logicTitle.textContent = 'Logique';
+    logicGroup.appendChild(logicTitle);
+    const mkLogic = (val, label) => {
+      const chip = document.createElement('label');
+      chip.className = 'filter-chip';
+      const input = document.createElement('input');
+      input.type = 'radio';
+      input.name = 'filter-logic';
+      input.value = val;
+      input.checked = this._filterLogic === val;
+      const span = document.createElement('span');
+      span.textContent = label;
+      chip.appendChild(input);
+      chip.appendChild(span);
+      input.addEventListener('change', () => {
+        if (input.checked) {
+          this._filterLogic = val;
+          localStorage.setItem(this.FILTER_LOGIC_KEY, this._filterLogic);
+          this.applyFilters();
+        }
+      });
+      return chip;
+    };
+    logicGroup.appendChild(mkLogic('AND', 'AND'));
+    logicGroup.appendChild(mkLogic('OR', 'OR'));
+    host.appendChild(logicGroup);
+
     const keys = this.state.getTaxonomyKeys();
     for (const key of keys) {
+      const options = this.state.getTaxonomyOptions(key) || [];
+      if (!options.length) continue; // skip taxonomies with no options
       const meta = this.state.getTaxonomyMeta(key);
       const group = document.createElement('div');
       group.className = 'filter-group';
@@ -42,7 +78,6 @@ export default class KanbanController {
       group.appendChild(title);
 
       this._filters[key] = new Set();
-      const options = this.state.getTaxonomyOptions(key);
       for (const opt of options) {
         const chip = document.createElement('label');
         chip.className = 'filter-chip';
@@ -74,17 +109,33 @@ export default class KanbanController {
     // either the card has null/empty for that key (treated as visible) or its value is in the allowed set.
     const cards = document.querySelectorAll('#kanban .card');
     const filters = this._filters || {};
+    const logic = this._filterLogic || 'AND';
+    // Precompute if there is at least one selected option across all taxonomies
+    let totalSelected = 0;
+    for (const s of Object.values(filters)) totalSelected += (s?.size || 0);
     for (const el of cards) {
-      let visible = true;
-      for (const [key, allowed] of Object.entries(filters)) {
-        const keySafe = String(key).toLowerCase().replace(/[^a-z0-9_-]/g, '-');
-        // read card data attribute set in TicketCard: data-taxo-<key>="<value>"
-        const val = el.getAttribute(`data-taxo-${keySafe}`);
-        if (val == null || val === '' || val === 'null') {
-          // no value: do not hide based on this taxonomy
-          continue;
+      let visible;
+      if (logic === 'AND') {
+        visible = true;
+        for (const [key, allowed] of Object.entries(filters)) {
+          const keySafe = String(key).toLowerCase().replace(/[^a-z0-9_-]/g, '-');
+          const val = el.getAttribute(`data-taxo-${keySafe}`);
+          if (val == null || val === '' || val === 'null') continue; // no value -> non-restrictive for AND
+          if (!allowed.has(val)) { visible = false; break; }
         }
-        if (!allowed.has(val)) { visible = false; break; }
+      } else { // OR logic
+        if (totalSelected === 0) {
+          // if nothing is selected anywhere, show all to avoid empty board
+          visible = true;
+        } else {
+          visible = false;
+          for (const [key, allowed] of Object.entries(filters)) {
+            const keySafe = String(key).toLowerCase().replace(/[^a-z0-9_-]/g, '-');
+            const val = el.getAttribute(`data-taxo-${keySafe}`);
+            if (val == null || val === '' || val === 'null') continue; // null doesn't match any selection
+            if (allowed.has(val)) { visible = true; break; }
+          }
+        }
       }
       el.style.display = visible ? '' : 'none';
     }
