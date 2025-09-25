@@ -42,6 +42,33 @@ export default class KanbanController {
     this.initBackgroundDnD();
   }
 
+  // =============== Import logic (reusable) ===============
+  async importSnapshot(data) {
+    const validSnapshot = (obj) => {
+      if (!obj || typeof obj !== 'object') return false;
+      if (!Array.isArray(obj.columns)) return false;
+      if (obj.board && typeof obj.board !== 'object') return false;
+      return true;
+    };
+    if (!validSnapshot(data)) throw new Error('Format invalide: attendez { board?, columns: [] }');
+    data.columns = (data.columns || []).map(c => ({ id: String(c.id), name: String(c.name), tickets: Array.isArray(c.tickets) ? c.tickets : [] }));
+    await this.state.reset(data);
+    // Restore background image if present under board
+    try {
+      const bg = data?.board?.backgroundImage;
+      if (bg && typeof bg === 'string') {
+        this.storage.setItem(this.BG_IMG_KEY, bg);
+        this.setBackgroundImage(bg);
+      }
+    } catch {}
+    // Rebuild the view and UI
+    this.view.dispose?.();
+    this.view = new KanbanView(this.root, this.state, this.logger);
+    this.renderTitle();
+    this.initFilters();
+    this.hookViewFiltering();
+  }
+
   renderTitle() {
     try {
       const h1 = document.getElementById('kanban-title');
@@ -91,24 +118,37 @@ export default class KanbanController {
       if (dragDepth === 0) document.body.classList.remove('bg-drag-active');
       e.preventDefault();
     };
-    const drop = (e) => {
+    const drop = async (e) => {
       e.preventDefault();
       dragDepth = 0;
       document.body.classList.remove('bg-drag-active');
       if (isFromModal(e.target)) return;
       const files = Array.from(e.dataTransfer?.files || []);
       if (!files.length) return;
+      // Prefer JSON import if any JSON file is present; otherwise fall back to image handling
+      const jsonFile = files.find(f => /json/i.test(f.type || '') || /\.json$/i.test(f.name || ''));
+      if (jsonFile) {
+        try {
+          const txt = await jsonFile.text();
+          const data = JSON.parse(txt);
+          await this.importSnapshot(data);
+        } catch (err) {
+          alert('Import JSON échoué: ' + (err?.message || err));
+        }
+        return;
+      }
       const img = files.find(f => (f.type || '').startsWith('image/'));
-      if (!img) return;
-      try {
-        const reader = new FileReader();
-        reader.onload = () => {
-          const dataUrl = reader.result;
-          this.setBackgroundImage(dataUrl);
-          try { this.storage.setItem(this.BG_IMG_KEY, dataUrl); } catch {}
-        };
-        reader.readAsDataURL(img);
-      } catch {}
+      if (img) {
+        try {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const dataUrl = reader.result;
+            this.setBackgroundImage(dataUrl);
+            try { this.storage.setItem(this.BG_IMG_KEY, dataUrl); } catch {}
+          };
+          reader.readAsDataURL(img);
+        } catch {}
+      }
     };
 
     if (this._bgHandlers) {
@@ -492,26 +532,11 @@ export default class KanbanController {
       });
     }
 
-    form.addEventListener('submit', async (e) => {
+  form.addEventListener('submit', async (e) => {
       e.preventDefault();
       try {
-        const data = await parsePayload();
-        if (!validSnapshot(data)) throw new Error('Format invalide: attendez { board?, columns: [] }');
-        data.columns = (data.columns || []).map(c => ({ id: String(c.id), name: String(c.name), tickets: Array.isArray(c.tickets) ? c.tickets : [] }));
-        await this.state.reset(data);
-        // Restore background image if present under board
-        try {
-          const bg = data?.board?.backgroundImage;
-          if (bg && typeof bg === 'string') {
-            this.storage.setItem(this.BG_IMG_KEY, bg);
-            this.setBackgroundImage(bg);
-          }
-        } catch {}
-        this.view.dispose?.();
-        this.view = new KanbanView(this.root, this.state, this.logger);
-  this.renderTitle();
-        this.initFilters();
-        this.hookViewFiltering();
+    const data = await parsePayload();
+    await this.importSnapshot(data);
         this.view.popup.close();
       } catch (err) {
         alert('Import échoué: ' + (err?.message || err));
