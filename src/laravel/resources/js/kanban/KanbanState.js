@@ -171,6 +171,9 @@ class KanbanState {
                     tx[k] = { label, options };
                 }
                 this.board = { taxonomies: tx };
+                if (typeof board.name === 'string' && board.name.trim()) {
+                    this.board.name = board.name.trim();
+                }
                 if (typeof board.backgroundImage === 'string' && board.backgroundImage) {
                     this.board.backgroundImage = board.backgroundImage;
                 }

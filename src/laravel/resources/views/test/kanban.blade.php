@@ -8,7 +8,8 @@
 <body>
 <div class="wrap">
     <div class="toolbar">
-    <h1 class="title">Kanban demo</h1>
+    <h1 class="title" id="kanban-title">Kanban</h1>
+    <button id="kanban-title-warn" type="button" class="btn" style="margin-left:8px; display:none;"></button>
         <div>
             <button class="btn" id="toggleTheme" title="Basculer thème">Mode clair</button>
             <button class="btn" id="createTicket">Créer nouveau ticket</button>

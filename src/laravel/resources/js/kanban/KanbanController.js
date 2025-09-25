@@ -34,11 +34,41 @@ export default class KanbanController {
     if (!this.root) return;
     await this.state.load();
     this.view = new KanbanView(this.root, this.state, this.logger);
+    this.renderTitle();
     this.initTheme();
     this.initFilters();
     this.bindToolbar();
     this.hookViewFiltering();
     this.initBackgroundDnD();
+  }
+
+  renderTitle() {
+    try {
+      const h1 = document.getElementById('kanban-title');
+      const warnBtn = document.getElementById('kanban-title-warn');
+      if (!h1) return;
+      const name = this.state?.board?.name;
+      if (typeof name === 'string' && name.trim()) {
+        h1.textContent = name.trim();
+        if (warnBtn) warnBtn.style.display = 'none';
+      } else {
+        h1.textContent = 'Kanban';
+        if (warnBtn) {
+          warnBtn.textContent = 'Board sans nom — Définir un nom';
+          warnBtn.style.display = '';
+          warnBtn.onclick = async () => {
+            const current = (this.state?.board?.name || '').trim();
+            const val = window.prompt('Nom du board ?', current);
+            if (val == null) return; // cancelled
+            const trimmed = String(val).trim();
+            if (!trimmed) return;
+            this.state.board = { ...(this.state.board || {}), name: trimmed };
+            try { await this.dataSource.setBoardMeta(this.state.board); } catch {}
+            this.renderTitle();
+          };
+        }
+      }
+    } catch {}
   }
 
   // =============== Background image via global DnD ===============
@@ -367,6 +397,7 @@ export default class KanbanController {
   // Rebuild the view
   this.view.dispose?.();
   this.view = new KanbanView(this.root, this.state, this.logger);
+  this.renderTitle();
   this.initFilters();
   this.hookViewFiltering();
   }
@@ -478,6 +509,7 @@ export default class KanbanController {
         } catch {}
         this.view.dispose?.();
         this.view = new KanbanView(this.root, this.state, this.logger);
+  this.renderTitle();
         this.initFilters();
         this.hookViewFiltering();
         this.view.popup.close();

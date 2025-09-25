@@ -27,6 +27,9 @@ function normalizeBoardMeta(meta) {
     }
   }
   const board = { taxonomies: out };
+  if (typeof meta?.name === 'string' && meta.name.trim()) {
+    board.name = meta.name.trim();
+  }
   if (typeof meta?.backgroundImage === 'string' && meta.backgroundImage) {
     board.backgroundImage = meta.backgroundImage;
   }

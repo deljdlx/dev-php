@@ -16,6 +16,7 @@ function demoFactory() {
 
   const authors = ['Alice', 'Bob', 'Chloé', 'David'];
   const board = {
+    name: 'Kanban demo',
     taxonomies: {
       label: { label: 'Couleur', options: [
         { key: 'blue', label: 'BLEU' },
