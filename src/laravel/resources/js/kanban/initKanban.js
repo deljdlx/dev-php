@@ -1,6 +1,6 @@
 import '../bootstrap';
 import '../../css/kanban.css';
-import KanbanState from './state';
+import KanbanState from './KanbanState';
 import { DemoDataSource } from './datasource';
 import createLogger from './utils/createLogger';
 import { KanbanView } from './view';

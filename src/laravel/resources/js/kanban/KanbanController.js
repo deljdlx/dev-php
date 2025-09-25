@@ -1,4 +1,4 @@
-import KanbanState from './state';
+import KanbanState from './KanbanState';
 import demoFactory from './demoFactory';
 import { DemoDataSource } from './datasource';
 import { createDefaultStorage } from './storage/StorageStrategy';

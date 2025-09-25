@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import KanbanState from '../state';
+import KanbanState from '../KanbanState';
 import Column from '../models/Column';
 import Ticket from '../models/Ticket';
 
