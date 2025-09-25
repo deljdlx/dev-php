@@ -28,11 +28,44 @@ export default class KanbanController {
   }
 
   initFilters() {
-    // Build a generic filter UI: for each taxonomy, checkboxes for its options.
+    // Build a dropdown filter UI: a toggle button opens a panel with logic + taxonomy chips
     const host = document.getElementById('kanban-filters');
     if (!host) return;
     host.innerHTML = '';
     this._filters = {}; // key -> Set(allowed option keys) that are visible
+    // Dropdown shell
+    const shell = document.createElement('div');
+    shell.className = 'filters-dd';
+    const toggle = document.createElement('button');
+    toggle.type = 'button';
+    toggle.id = 'filtersToggle';
+    toggle.className = 'btn filters-toggle';
+    toggle.setAttribute('aria-haspopup', 'true');
+    toggle.setAttribute('aria-expanded', 'false');
+    toggle.textContent = 'Filtres';
+    const panel = document.createElement('div');
+    panel.className = 'filters-panel';
+    panel.setAttribute('role', 'menu');
+    panel.hidden = true;
+    shell.appendChild(toggle);
+    shell.appendChild(panel);
+    host.appendChild(shell);
+    this._filtersToggle = toggle;
+    this._filtersPanel = panel;
+    const openPanel = () => { panel.hidden = false; toggle.setAttribute('aria-expanded', 'true'); shell.setAttribute('data-open', 'true'); };
+    const closePanel = () => { panel.hidden = true; toggle.setAttribute('aria-expanded', 'false'); shell.removeAttribute('data-open'); };
+    const togglePanel = () => { panel.hidden ? openPanel() : closePanel(); };
+  toggle.addEventListener('click', togglePanel);
+  // Remove previous global listeners if any
+  if (this._filtersDocClick) document.removeEventListener('click', this._filtersDocClick);
+  if (this._filtersKeydown) document.removeEventListener('keydown', this._filtersKeydown);
+  // Outside click close
+  this._filtersDocClick = (e) => { if (!shell.contains(e.target)) closePanel(); };
+  document.addEventListener('click', this._filtersDocClick);
+  // Escape to close
+  this._filtersKeydown = (e) => { if (e.key === 'Escape') closePanel(); };
+  document.addEventListener('keydown', this._filtersKeydown);
+
     // Add logic toggle (AND/OR)
     const logicGroup = document.createElement('div');
     logicGroup.className = 'filter-group';
@@ -57,25 +90,26 @@ export default class KanbanController {
           this._filterLogic = val;
           localStorage.setItem(this.FILTER_LOGIC_KEY, this._filterLogic);
           this.applyFilters();
+          this.updateFilterSummary();
         }
       });
       return chip;
     };
     logicGroup.appendChild(mkLogic('AND', 'AND'));
     logicGroup.appendChild(mkLogic('OR', 'OR'));
-    host.appendChild(logicGroup);
+    panel.appendChild(logicGroup);
 
     const keys = this.state.getTaxonomyKeys();
     for (const key of keys) {
       const options = this.state.getTaxonomyOptions(key) || [];
       if (!options.length) continue; // skip taxonomies with no options
-      const meta = this.state.getTaxonomyMeta(key);
-      const group = document.createElement('div');
-      group.className = 'filter-group';
-      const title = document.createElement('span');
-      title.className = 'filter-title';
-      title.textContent = meta?.label || key;
-      group.appendChild(title);
+  const meta = this.state.getTaxonomyMeta(key);
+  const group = document.createElement('div');
+  group.className = 'filter-group';
+  const title = document.createElement('span');
+  title.className = 'filter-title';
+  title.textContent = meta?.label || key;
+  group.appendChild(title);
 
       this._filters[key] = new Set();
       for (const opt of options) {
@@ -94,14 +128,33 @@ export default class KanbanController {
         // Seed visible set
         this._filters[key].add(opt.key);
         input.addEventListener('change', () => {
-          if (input.checked) this._filters[key].add(opt.value || opt.key);
-          else this._filters[key].delete(opt.value || opt.key);
+          if (input.checked) this._filters[key].add(input.value);
+          else this._filters[key].delete(input.value);
           this.applyFilters();
+          this.updateFilterSummary();
         });
       }
-      host.appendChild(group);
+      panel.appendChild(group);
     }
+    this.updateFilterSummary();
     this.applyFilters();
+  }
+
+  updateFilterSummary() {
+    try {
+      const btn = this._filtersToggle;
+      const keys = this.state.getTaxonomyKeys();
+      let active = 0;
+      for (const key of keys) {
+        const opts = this.state.getTaxonomyOptions(key) || [];
+        if (!opts.length) continue;
+        const selected = this._filters?.[key]?.size ?? 0;
+        if (selected > 0 && selected < opts.length) active++;
+      }
+      const logic = this._filterLogic || 'AND';
+      const label = active > 0 ? `Filtres (${active}) · ${logic}` : `Filtres · ${logic}`;
+      if (btn) btn.textContent = label;
+    } catch {}
   }
 
   applyFilters() {

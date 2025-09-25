@@ -146,6 +146,16 @@ body {
 .filter-chip { display:inline-flex; align-items:center; gap: 6px; padding: 2px 6px; border-radius: 999px; border:1px solid var(--kanban-btn-border); background: var(--kanban-card-bg); color: var(--kanban-text); font-size: 12px; cursor: pointer; }
 .filter-chip input { accent-color: var(--kanban-accent); }
 
+/* Filters dropdown */
+.filters-dd { position: relative; }
+.filters-dd .filters-toggle { display:inline-flex; align-items:center; gap:8px; }
+.filters-dd[data-open="true"] .filters-toggle { box-shadow: 0 0 0 2px var(--kanban-accent) inset; }
+.filters-dd .filters-panel { position:absolute; top: calc(100% + 6px); left:0; z-index: 50; min-width: 320px; max-width: min(90vw, 720px); padding: 10px; background: var(--kanban-panel); border:1px solid var(--kanban-btn-border); border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.25); display:block; }
+.filters-dd .filters-panel .filter-group { margin-bottom: 8px; }
+.filters-dd .filters-panel .filter-title { min-width: 80px; }
+.filters-dd .filters-panel .filter-chip { user-select: none; }
+.filters-dd .filters-panel[hidden] { display:none; }
+
 .btn {
   background: var(--kanban-btn-bg);
   color: var(--kanban-text);
