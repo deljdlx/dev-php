@@ -189,5 +189,21 @@ body {
 .ticket-field.ticket-description { display:block; }
 .ticket-field.ticket-description .field-label { display:block; margin-bottom: 6px; }
 
+/* Import JSON dropzone */
+.modal-dropzone {
+  border: 2px dashed var(--kanban-btn-border);
+  border-radius: 10px;
+  padding: 16px;
+  text-align: center;
+  color: var(--kanban-muted);
+  background: transparent;
+  transition: background .2s ease, border-color .2s ease;
+  font-size: 13px;
+}
+.modal-dropzone.is-dragover {
+  border-color: var(--kanban-accent);
+  background: color-mix(in srgb, var(--kanban-accent) 8%, transparent);
+}
+
 @media (max-width: 1100px) { .board { grid-template-columns: repeat(2, minmax(var(--kanban-col-min), var(--kanban-col-max))); } }
 @media (max-width: 600px) { .board { grid-template-columns: 1fr; } }

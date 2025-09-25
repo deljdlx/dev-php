@@ -78,13 +78,16 @@ import openCreateTicketPopup from './ui/createTicket';
         document.getElementById('importJson')?.addEventListener('click', () => {
                 if (!view?.popup) return;
                 const wrap = document.createElement('div');
-                wrap.innerHTML = `
+            wrap.innerHTML = `
                         <form class="ticket-form" id="import-form">
                             <div class="tf-grid">
                                 <div class="tf-field">
                                     <label class="tf-label">Fichier JSON</label>
                                     <input class="tf-input" type="file" id="import-file" accept="application/json,.json" />
                                 </div>
+                <div class="tf-field">
+                  <div id="import-drop" class="modal-dropzone">Glissez-déposez votre fichier JSON ici</div>
+                </div>
                                 <div class="tf-field">
                                     <label class="tf-label">Ou collez le JSON</label>
                                     <textarea class="tf-input" id="import-text" rows="8" placeholder="{\n  \"board\": { ... },\n  \"columns\": [ ... ]\n}"></textarea>
@@ -98,6 +101,7 @@ import openCreateTicketPopup from './ui/createTicket';
                 const form = wrap.querySelector('#import-form');
                 const fileInput = wrap.querySelector('#import-file');
                 const textInput = wrap.querySelector('#import-text');
+            const drop = wrap.querySelector('#import-drop');
 
                 const parsePayload = async () => {
                         if (fileInput.files && fileInput.files[0]) {
@@ -109,6 +113,30 @@ import openCreateTicketPopup from './ui/createTicket';
                         }
                         throw new Error('Aucune donnée fournie');
                 };
+
+                        // Drag & Drop support
+                        if (drop) {
+                            const prevent = (e) => { e.preventDefault(); e.stopPropagation(); };
+                            ['dragenter','dragover','dragleave','drop'].forEach(evt => drop.addEventListener(evt, prevent));
+                            drop.addEventListener('dragover', () => drop.classList.add('is-dragover'));
+                            drop.addEventListener('dragleave', () => drop.classList.remove('is-dragover'));
+                            drop.addEventListener('drop', async (e) => {
+                                drop.classList.remove('is-dragover');
+                                try {
+                                    const file = e.dataTransfer?.files?.[0];
+                                    if (!file) return;
+                                    if (!/json|\.json$/i.test(file.type || file.name)) throw new Error('Type de fichier non supporté');
+                                    const txt = await file.text();
+                                    textInput.value = txt; // also populate textarea for visibility
+                                    // Also set the file input to keep a reference
+                                    const dt = new DataTransfer();
+                                    dt.items.add(file);
+                                    fileInput.files = dt.files;
+                                } catch (err) {
+                                    alert('Lecture du fichier échouée: ' + (err?.message || err));
+                                }
+                            });
+                        }
 
                 const validSnapshot = (obj) => {
                         if (!obj || typeof obj !== 'object') return false;
