@@ -18,6 +18,7 @@
             <button class="btn" id="resetBoard">Réinitialiser</button>
         </div>
     </div>
+    <div id="kanban-filters" class="filters"></div>
     <div id="kanban" class="board"></div>
     <p class="credits">JS POO + SortableJS. Aucun backend; données en mémoire/localStorage.</p>
 </div>

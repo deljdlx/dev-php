@@ -76,9 +76,15 @@ export class KanbanView {
     }
     updateCounts() {
         for (const el of this.root.querySelectorAll('.col')) {
-            const colId = el.dataset.colId;
-            const count = this.state.columns.find(c => c.id === colId)?.tickets.length ?? 0;
-            el.querySelector('.count').textContent = String(count);
+            const list = el.querySelector('.list');
+            if (!list) continue;
+            let visible = 0;
+            const cards = list.querySelectorAll('.card');
+            for (const card of cards) {
+                // Count only visible cards (filtered ones hidden via display:none won't have offsetParent)
+                if (card.offsetParent !== null) visible++;
+            }
+            el.querySelector('.count').textContent = String(visible);
         }
     }
     createCardElement(ticket) {

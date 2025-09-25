@@ -20,7 +20,76 @@ export default class KanbanController {
     await this.state.load();
     this.view = new KanbanView(this.root, this.state, this.logger);
     this.initTheme();
-    this.bindToolbar();
+    this.initFilters();
+  this.bindToolbar();
+  this.hookViewFiltering();
+  }
+
+  initFilters() {
+    // Build a generic filter UI: for each taxonomy, checkboxes for its options.
+    const host = document.getElementById('kanban-filters');
+    if (!host) return;
+    host.innerHTML = '';
+    this._filters = {}; // key -> Set(allowed option keys) that are visible
+    const keys = this.state.getTaxonomyKeys();
+    for (const key of keys) {
+      const meta = this.state.getTaxonomyMeta(key);
+      const group = document.createElement('div');
+      group.className = 'filter-group';
+      const title = document.createElement('span');
+      title.className = 'filter-title';
+      title.textContent = meta?.label || key;
+      group.appendChild(title);
+
+      this._filters[key] = new Set();
+      const options = this.state.getTaxonomyOptions(key);
+      for (const opt of options) {
+        const chip = document.createElement('label');
+        chip.className = 'filter-chip';
+        const input = document.createElement('input');
+        input.type = 'checkbox';
+        input.checked = true; // default: show all
+        input.dataset.taxoKey = key;
+        input.value = opt.key;
+        const span = document.createElement('span');
+        span.textContent = opt.label ?? opt.key;
+        chip.appendChild(input);
+        chip.appendChild(span);
+        group.appendChild(chip);
+        // Seed visible set
+        this._filters[key].add(opt.key);
+        input.addEventListener('change', () => {
+          if (input.checked) this._filters[key].add(opt.value || opt.key);
+          else this._filters[key].delete(opt.value || opt.key);
+          this.applyFilters();
+        });
+      }
+      host.appendChild(group);
+    }
+    this.applyFilters();
+  }
+
+  applyFilters() {
+    // Generic filtering: a card is visible if for every taxonomy key where filters exist,
+    // either the card has null/empty for that key (treated as visible) or its value is in the allowed set.
+    const cards = document.querySelectorAll('#kanban .card');
+    const filters = this._filters || {};
+    for (const el of cards) {
+      let visible = true;
+      for (const [key, allowed] of Object.entries(filters)) {
+        const keySafe = String(key).toLowerCase().replace(/[^a-z0-9_-]/g, '-');
+        // read card data attribute set in TicketCard: data-taxo-<key>="<value>"
+        const val = el.getAttribute(`data-taxo-${keySafe}`);
+        if (val == null || val === '' || val === 'null') {
+          // no value: do not hide based on this taxonomy
+          continue;
+        }
+        if (!allowed.has(val)) { visible = false; break; }
+      }
+      el.style.display = visible ? '' : 'none';
+    }
+    // update counts after filtering
+    this.view.updateCounts();
   }
 
   initTheme() {
@@ -48,6 +117,23 @@ export default class KanbanController {
     document.getElementById('resetBoard')?.addEventListener('click', () => this.resetBoard());
     document.getElementById('downloadJson')?.addEventListener('click', () => this.downloadJson());
     document.getElementById('importJson')?.addEventListener('click', () => this.openImportPopup());
+    // Re-apply filters when the board is re-rendered or on window events if needed
+    const reapply = () => this.applyFilters?.();
+    window.addEventListener('resize', reapply);
+    this.hookViewFiltering();
+  }
+
+  hookViewFiltering() {
+    if (!this.view) return;
+    if (!this.view._createCardOriginal) {
+      this.view._createCardOriginal = this.view.createCardElement.bind(this.view);
+      this.view.createCardElement = (t) => {
+        const node = this.view._createCardOriginal(t);
+        Promise.resolve().then(() => this.applyFilters());
+        return node;
+      };
+    }
+    Promise.resolve().then(() => this.applyFilters());
   }
 
   async addRandom() {
@@ -84,6 +170,8 @@ export default class KanbanController {
     await this.state.reset(cfg);
     this.view.dispose?.();
     this.view = new KanbanView(this.root, this.state, this.logger);
+  this.initFilters();
+  this.hookViewFiltering();
   }
 
   downloadJson() {
@@ -181,6 +269,8 @@ export default class KanbanController {
         await this.state.reset(data);
         this.view.dispose?.();
         this.view = new KanbanView(this.root, this.state, this.logger);
+  this.initFilters();
+  this.hookViewFiltering();
         this.view.popup.close();
       } catch (err) {
         alert('Import échoué: ' + (err?.message || err));
