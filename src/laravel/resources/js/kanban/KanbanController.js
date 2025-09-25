@@ -1,6 +1,7 @@
 import KanbanState from './state';
 import demoFactory from './demoFactory';
 import { DemoDataSource } from './datasource';
+import { createDefaultStorage } from './storage/StorageStrategy';
 import createLogger from './utils/createLogger';
 import { KanbanView } from './view';
 import openCreateTicketPopup from './ui/createTicket';
@@ -9,13 +10,24 @@ export default class KanbanController {
   constructor(root = document.getElementById('kanban')) {
     this.root = root;
     this.logger = createLogger('Kanban');
-    this.dataSource = new DemoDataSource(demoFactory, 'demo.kanban.v6', this.logger);
+    this.storage = createDefaultStorage();
+    this.dataSource = new DemoDataSource(demoFactory, 'demo.kanban.v6', this.logger, this.storage);
     this.state = new KanbanState(this.dataSource, { logger: this.logger });
     this.view = null;
+
+    // Keys and defaults
     this.THEME_KEY = 'kanban.theme';
-  this.FILTER_LOGIC_KEY = 'kanban.filter.logic';
-  this._filterLogic = (localStorage.getItem(this.FILTER_LOGIC_KEY) === 'OR') ? 'OR' : 'AND';
-  this.BG_IMG_KEY = 'kanban.bgImage';
+    this.FILTER_LOGIC_KEY = 'kanban.filter.logic';
+    this._filterLogic = (this.storage.getItem(this.FILTER_LOGIC_KEY) === 'OR') ? 'OR' : 'AND';
+    this.BG_IMG_KEY = 'kanban.bgImage';
+
+    // Internals
+    this._filters = {}; // taxonomyKey -> Set(selectedOptionKeys)
+    this._filtersToggle = null;
+    this._filtersPanel = null;
+    this._filtersDocClick = null;
+    this._filtersKeydown = null;
+    this._bgHandlers = null;
   }
 
   async init() {
@@ -24,16 +36,17 @@ export default class KanbanController {
     this.view = new KanbanView(this.root, this.state, this.logger);
     this.initTheme();
     this.initFilters();
-  this.bindToolbar();
-  this.hookViewFiltering();
+    this.bindToolbar();
+    this.hookViewFiltering();
     this.initBackgroundDnD();
   }
 
+  // =============== Background image via global DnD ===============
   initBackgroundDnD() {
     let dragDepth = 0;
     const isFromModal = (target) => !!(target && (target.closest?.('.modal') || target.closest?.('.modal-dropzone')));
+
     const enter = (e) => {
-      // Only react to file drags, not text selections
       if (e.dataTransfer && !Array.from(e.dataTransfer.types || []).includes('Files')) return;
       dragDepth++;
       document.body.classList.add('bg-drag-active');
@@ -52,7 +65,7 @@ export default class KanbanController {
       e.preventDefault();
       dragDepth = 0;
       document.body.classList.remove('bg-drag-active');
-      if (isFromModal(e.target)) return; // let modals/import handle their own DnD
+      if (isFromModal(e.target)) return;
       const files = Array.from(e.dataTransfer?.files || []);
       if (!files.length) return;
       const img = files.find(f => (f.type || '').startsWith('image/'));
@@ -62,13 +75,12 @@ export default class KanbanController {
         reader.onload = () => {
           const dataUrl = reader.result;
           this.setBackgroundImage(dataUrl);
-          // Persist in localStorage like other Kanban data
-          try { localStorage.setItem(this.BG_IMG_KEY, dataUrl); } catch {}
+          try { this.storage.setItem(this.BG_IMG_KEY, dataUrl); } catch {}
         };
         reader.readAsDataURL(img);
       } catch {}
     };
-    // Clean previous listeners if any
+
     if (this._bgHandlers) {
       const { enter: a, over: b, leave: c, drop: d } = this._bgHandlers;
       window.removeEventListener('dragenter', a);
@@ -81,9 +93,9 @@ export default class KanbanController {
     window.addEventListener('dragover', over);
     window.addEventListener('dragleave', leave);
     window.addEventListener('drop', drop);
-    // Restore from localStorage if present
+
     try {
-      const cached = localStorage.getItem(this.BG_IMG_KEY);
+      const cached = this.storage.getItem(this.BG_IMG_KEY);
       if (cached) this.setBackgroundImage(cached);
     } catch {}
   }
@@ -95,12 +107,13 @@ export default class KanbanController {
     b.classList.add('has-custom-bg');
   }
 
+  // =============== Filters (dropdown + AND/OR) ===============
   initFilters() {
-    // Build a dropdown filter UI: a toggle button opens a panel with logic + taxonomy chips
     const host = document.getElementById('kanban-filters');
     if (!host) return;
     host.innerHTML = '';
-    this._filters = {}; // key -> Set(allowed option keys) that are visible
+    this._filters = {};
+
     // Dropdown shell
     const shell = document.createElement('div');
     shell.className = 'filters-dd';
@@ -120,27 +133,28 @@ export default class KanbanController {
     host.appendChild(shell);
     this._filtersToggle = toggle;
     this._filtersPanel = panel;
+
     const openPanel = () => { panel.hidden = false; toggle.setAttribute('aria-expanded', 'true'); shell.setAttribute('data-open', 'true'); };
     const closePanel = () => { panel.hidden = true; toggle.setAttribute('aria-expanded', 'false'); shell.removeAttribute('data-open'); };
     const togglePanel = () => { panel.hidden ? openPanel() : closePanel(); };
-  toggle.addEventListener('click', togglePanel);
-  // Remove previous global listeners if any
-  if (this._filtersDocClick) document.removeEventListener('click', this._filtersDocClick);
-  if (this._filtersKeydown) document.removeEventListener('keydown', this._filtersKeydown);
-  // Outside click close
-  this._filtersDocClick = (e) => { if (!shell.contains(e.target)) closePanel(); };
-  document.addEventListener('click', this._filtersDocClick);
-  // Escape to close
-  this._filtersKeydown = (e) => { if (e.key === 'Escape') closePanel(); };
-  document.addEventListener('keydown', this._filtersKeydown);
+    toggle.addEventListener('click', togglePanel);
 
-    // Add logic toggle (AND/OR)
+    // Cleanup and reattach global listeners
+    if (this._filtersDocClick) document.removeEventListener('click', this._filtersDocClick);
+    if (this._filtersKeydown) document.removeEventListener('keydown', this._filtersKeydown);
+    this._filtersDocClick = (e) => { if (!shell.contains(e.target)) closePanel(); };
+    document.addEventListener('click', this._filtersDocClick);
+    this._filtersKeydown = (e) => { if (e.key === 'Escape') closePanel(); };
+    document.addEventListener('keydown', this._filtersKeydown);
+
+    // Logic group (AND/OR)
     const logicGroup = document.createElement('div');
     logicGroup.className = 'filter-group';
     const logicTitle = document.createElement('span');
     logicTitle.className = 'filter-title';
     logicTitle.textContent = 'Logique';
     logicGroup.appendChild(logicTitle);
+
     const mkLogic = (val, label) => {
       const chip = document.createElement('label');
       chip.className = 'filter-chip';
@@ -156,7 +170,7 @@ export default class KanbanController {
       input.addEventListener('change', () => {
         if (input.checked) {
           this._filterLogic = val;
-          localStorage.setItem(this.FILTER_LOGIC_KEY, this._filterLogic);
+          this.storage.setItem(this.FILTER_LOGIC_KEY, this._filterLogic);
           this.applyFilters();
           this.updateFilterSummary();
         }
@@ -167,17 +181,18 @@ export default class KanbanController {
     logicGroup.appendChild(mkLogic('OR', 'OR'));
     panel.appendChild(logicGroup);
 
+    // Taxonomy groups
     const keys = this.state.getTaxonomyKeys();
     for (const key of keys) {
       const options = this.state.getTaxonomyOptions(key) || [];
-      if (!options.length) continue; // skip taxonomies with no options
-  const meta = this.state.getTaxonomyMeta(key);
-  const group = document.createElement('div');
-  group.className = 'filter-group';
-  const title = document.createElement('span');
-  title.className = 'filter-title';
-  title.textContent = meta?.label || key;
-  group.appendChild(title);
+      if (!options.length) continue;
+      const meta = this.state.getTaxonomyMeta(key);
+      const group = document.createElement('div');
+      group.className = 'filter-group';
+      const title = document.createElement('span');
+      title.className = 'filter-title';
+      title.textContent = meta?.label || key;
+      group.appendChild(title);
 
       this._filters[key] = new Set();
       for (const opt of options) {
@@ -185,7 +200,7 @@ export default class KanbanController {
         chip.className = 'filter-chip';
         const input = document.createElement('input');
         input.type = 'checkbox';
-        input.checked = true; // default: show all
+        input.checked = true;
         input.dataset.taxoKey = key;
         input.value = opt.key;
         const span = document.createElement('span');
@@ -193,6 +208,7 @@ export default class KanbanController {
         chip.appendChild(input);
         chip.appendChild(span);
         group.appendChild(chip);
+
         // Seed visible set
         this._filters[key].add(opt.key);
         input.addEventListener('change', () => {
@@ -204,6 +220,7 @@ export default class KanbanController {
       }
       panel.appendChild(group);
     }
+
     this.updateFilterSummary();
     this.applyFilters();
   }
@@ -226,14 +243,13 @@ export default class KanbanController {
   }
 
   applyFilters() {
-    // Generic filtering: a card is visible if for every taxonomy key where filters exist,
-    // either the card has null/empty for that key (treated as visible) or its value is in the allowed set.
     const cards = document.querySelectorAll('#kanban .card');
     const filters = this._filters || {};
     const logic = this._filterLogic || 'AND';
-    // Precompute if there is at least one selected option across all taxonomies
+
     let totalSelected = 0;
     for (const s of Object.values(filters)) totalSelected += (s?.size || 0);
+
     for (const el of cards) {
       let visible;
       if (logic === 'AND') {
@@ -241,29 +257,28 @@ export default class KanbanController {
         for (const [key, allowed] of Object.entries(filters)) {
           const keySafe = String(key).toLowerCase().replace(/[^a-z0-9_-]/g, '-');
           const val = el.getAttribute(`data-taxo-${keySafe}`);
-          if (val == null || val === '' || val === 'null') continue; // no value -> non-restrictive for AND
+          if (val == null || val === '' || val === 'null') continue;
           if (!allowed.has(val)) { visible = false; break; }
         }
-      } else { // OR logic
+      } else {
         if (totalSelected === 0) {
-          // if nothing is selected anywhere, show all to avoid empty board
           visible = true;
         } else {
           visible = false;
           for (const [key, allowed] of Object.entries(filters)) {
             const keySafe = String(key).toLowerCase().replace(/[^a-z0-9_-]/g, '-');
             const val = el.getAttribute(`data-taxo-${keySafe}`);
-            if (val == null || val === '' || val === 'null') continue; // null doesn't match any selection
+            if (val == null || val === '' || val === 'null') continue;
             if (allowed.has(val)) { visible = true; break; }
           }
         }
       }
       el.style.display = visible ? '' : 'none';
     }
-    // update counts after filtering
     this.view.updateCounts();
   }
 
+  // =============== Theme ===============
   initTheme() {
     const applyTheme = (theme) => {
       const target = document.body;
@@ -273,26 +288,26 @@ export default class KanbanController {
       if (btn) btn.textContent = theme === 'light' ? 'Mode sombre' : 'Mode clair';
     };
     this._applyTheme = applyTheme;
-    const saved = localStorage.getItem(this.THEME_KEY);
+    const saved = this.storage.getItem(this.THEME_KEY);
     applyTheme(saved === 'light' ? 'light' : 'dark');
     document.getElementById('toggleTheme')?.addEventListener('click', () => {
       const isLight = document.body.getAttribute('data-theme') === 'light';
       const next = isLight ? 'dark' : 'light';
-      localStorage.setItem(this.THEME_KEY, next);
+      this.storage.setItem(this.THEME_KEY, next);
       applyTheme(next);
     });
   }
 
+  // =============== Toolbar / View hooks ===============
   bindToolbar() {
     document.getElementById('createTicket')?.addEventListener('click', () => openCreateTicketPopup({ view: this.view, state: this.state, logger: this.logger }));
     document.getElementById('addRandom')?.addEventListener('click', () => this.addRandom());
     document.getElementById('resetBoard')?.addEventListener('click', () => this.resetBoard());
     document.getElementById('downloadJson')?.addEventListener('click', () => this.downloadJson());
     document.getElementById('importJson')?.addEventListener('click', () => this.openImportPopup());
-    // Re-apply filters when the board is re-rendered or on window events if needed
+
     const reapply = () => this.applyFilters?.();
     window.addEventListener('resize', reapply);
-    this.hookViewFiltering();
   }
 
   hookViewFiltering() {
@@ -308,6 +323,7 @@ export default class KanbanController {
     Promise.resolve().then(() => this.applyFilters());
   }
 
+  // =============== Actions ===============
   async addRandom() {
     const first = this.state.columns[0];
     if (!first) return;
@@ -342,8 +358,8 @@ export default class KanbanController {
     await this.state.reset(cfg);
     this.view.dispose?.();
     this.view = new KanbanView(this.root, this.state, this.logger);
-  this.initFilters();
-  this.hookViewFiltering();
+    this.initFilters();
+    this.hookViewFiltering();
   }
 
   downloadJson() {
@@ -409,7 +425,6 @@ export default class KanbanController {
       return true;
     };
 
-    // Drag & Drop support
     if (drop) {
       const prevent = (e) => { e.preventDefault(); e.stopPropagation(); };
       ['dragenter','dragover','dragleave','drop'].forEach(evt => drop.addEventListener(evt, prevent));
@@ -441,8 +456,8 @@ export default class KanbanController {
         await this.state.reset(data);
         this.view.dispose?.();
         this.view = new KanbanView(this.root, this.state, this.logger);
-  this.initFilters();
-  this.hookViewFiltering();
+        this.initFilters();
+        this.hookViewFiltering();
         this.view.popup.close();
       } catch (err) {
         alert('Import échoué: ' + (err?.message || err));

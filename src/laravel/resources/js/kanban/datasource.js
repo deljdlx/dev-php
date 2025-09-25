@@ -35,13 +35,14 @@ function normalizeBoardMeta(meta) {
  */
 export class DemoDataSource {
   // Accepts either a factory function OR a plain config object { board, columns }
-  constructor(factoryOrConfig, storageKey = 'demo.kanban.v1', logger = null) {
+  constructor(factoryOrConfig, storageKey = 'demo.kanban.v1', logger = null, storage) {
     this.factory = factoryOrConfig;
     this.storageKey = storageKey;
     this.logger = logger;
+    this.storage = storage; // must implement StorageStrategy
   }
-  #read() {
-    const raw = localStorage.getItem(this.storageKey);
+    #read() {
+      const raw = this.storage?.getItem?.(this.storageKey);
     if (!raw) return null;
     try { return JSON.parse(raw); } catch { return null; }
   }
@@ -51,7 +52,7 @@ export class DemoDataSource {
       // Backfill/normalize board meta
       const normalized = normalizeBoardMeta(existing.board || defaultBoardMeta());
       const dto = { board: normalized, columns: existing.columns };
-      localStorage.setItem(this.storageKey, JSON.stringify(dto));
+    this.storage?.setItem?.(this.storageKey, JSON.stringify(dto));
       return dto;
     }
     // Seed using a factory function OR a plain config object
@@ -70,8 +71,8 @@ export class DemoDataSource {
     } else {
   data = { board: defaultBoardMeta(), columns: [] };
     }
-    // Persist seed
-    localStorage.setItem(this.storageKey, JSON.stringify({ board: data.board, columns: data.columns.map(c => (typeof c.toJSON === 'function' ? c.toJSON() : c)) }));
+  // Persist seed
+  this.storage?.setItem?.(this.storageKey, JSON.stringify({ board: data.board, columns: data.columns.map(c => (typeof c.toJSON === 'function' ? c.toJSON() : c)) }));
     this.logger?.debug('Seeded board + columns from factory');
     return data;
   }
@@ -108,7 +109,7 @@ export class DemoDataSource {
   board: existing.board || defaultBoardMeta(),
       columns: columns.map(c => (typeof c.toJSON === 'function' ? c.toJSON() : c)),
     };
-    localStorage.setItem(this.storageKey, JSON.stringify(dto));
+    this.storage?.setItem?.(this.storageKey, JSON.stringify(dto));
     this.logger?.debug('save board+columns', dto);
   }
   async setBoardMeta(board) {
@@ -117,7 +118,7 @@ export class DemoDataSource {
       board: board ? normalizeBoardMeta(board) : existing.board,
       columns: existing.columns || [],
     };
-    localStorage.setItem(this.storageKey, JSON.stringify(dto));
+    this.storage?.setItem?.(this.storageKey, JSON.stringify(dto));
     this.logger?.debug('setBoardMeta', dto.board);
   }
 }
