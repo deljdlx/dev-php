@@ -403,7 +403,7 @@ export default class KanbanController {
   }
 
   downloadJson() {
-    const board = { ...(this.state.board || {}) };
+  const board = { ...(this.state.board || {}) };
     try {
       const bg = this.storage.getItem(this.BG_IMG_KEY);
       if (bg) board.backgroundImage = bg;

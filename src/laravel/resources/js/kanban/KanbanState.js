@@ -61,7 +61,11 @@ class KanbanState {
                 const arr = Array.isArray(v?.options) ? v.options : [];
                 tx[k] = { label: v.label || k, options: arr };
             }
-            this.board = { taxonomies: tx };
+            this.board = {
+                name: (typeof board?.name === 'string' && board.name.trim()) ? board.name.trim() : undefined,
+                backgroundImage: (typeof board?.backgroundImage === 'string' && board.backgroundImage) ? board.backgroundImage : undefined,
+                taxonomies: tx,
+            };
         }
         const meta = await (this.dataSource.getColumnsMeta?.() ?? this.dataSource.getColumns());
         // normalize to Column[] with empty tickets
@@ -98,7 +102,11 @@ class KanbanState {
                     const arr = Array.isArray(v?.options) ? v.options : [];
                     tx[k] = { label: v.label || k, options: arr };
                 }
-                this.board = { taxonomies: tx };
+                this.board = {
+                    name: (typeof board?.name === 'string' && board.name.trim()) ? board.name.trim() : undefined,
+                    backgroundImage: (typeof board?.backgroundImage === 'string' && board.backgroundImage) ? board.backgroundImage : undefined,
+                    taxonomies: tx,
+                };
             }
             this.columns = await this.dataSource.getColumns();
         }
@@ -160,26 +168,22 @@ class KanbanState {
         if (Array.isArray(newData)) {
             this.columns = newData.map(c => c instanceof Column ? c : new Column(c));
         } else if (newData && typeof newData === 'object') {
-            const board = newData.board;
-            if (board && board.taxonomies) {
-                // Normalize incoming board meta to { key: {label, options:[{key,label}] } }
-                const tx = {};
-                for (const [k, v] of Object.entries(board.taxonomies)) {
-                    const label = v?.label || k;
-                    const arr = Array.isArray(v?.options) ? v.options : (Array.isArray(v) ? v : []);
-                    const options = arr.map(o => (typeof o === 'object' && o && 'key' in o) ? o : { key: String(o), label: String(o) });
-                    tx[k] = { label, options };
-                }
-                this.board = { taxonomies: tx };
-                if (typeof board.name === 'string' && board.name.trim()) {
-                    this.board.name = board.name.trim();
-                }
-                if (typeof board.backgroundImage === 'string' && board.backgroundImage) {
-                    this.board.backgroundImage = board.backgroundImage;
-                }
-                if (typeof this.dataSource.setBoardMeta === 'function') {
-                    await this.dataSource.setBoardMeta(this.board);
-                }
+            const board = newData.board || {};
+            // Normalize incoming board meta to { name?, backgroundImage?, taxonomies: { key: {label, options[]} } }
+            const tx = {};
+            for (const [k, v] of Object.entries(board.taxonomies || {})) {
+                const label = v?.label || k;
+                const arr = Array.isArray(v?.options) ? v.options : (Array.isArray(v) ? v : []);
+                const options = arr.map(o => (typeof o === 'object' && o && 'key' in o) ? o : { key: String(o), label: String(o) });
+                tx[k] = { label, options };
+            }
+            this.board = {
+                name: (typeof board.name === 'string' && board.name.trim()) ? board.name.trim() : undefined,
+                backgroundImage: (typeof board.backgroundImage === 'string' && board.backgroundImage) ? board.backgroundImage : undefined,
+                taxonomies: tx,
+            };
+            if (typeof this.dataSource.setBoardMeta === 'function') {
+                await this.dataSource.setBoardMeta(this.board);
             }
             this.columns = (newData.columns || []).map(c => c instanceof Column ? c : new Column(c));
         } else {
