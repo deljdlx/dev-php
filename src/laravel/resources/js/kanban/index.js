@@ -11,10 +11,28 @@ import openCreateTicketPopup from './ui/createTicket';
     const root = document.getElementById('kanban');
     if (!root) return;
     const logger = createLogger('Kanban');
+
+    // Theme init: read preference and apply to body or #kanban
+    const THEME_KEY = 'kanban.theme';
+    const applyTheme = (theme) => {
+        const target = document.body; // apply globally; CSS is scoped to #kanban
+        if (theme === 'light') target.setAttribute('data-theme', 'light');
+        else target.removeAttribute('data-theme');
+        const btn = document.getElementById('toggleTheme');
+        if (btn) btn.textContent = theme === 'light' ? 'Mode sombre' : 'Mode clair';
+    };
+    const savedTheme = localStorage.getItem(THEME_KEY);
+    applyTheme(savedTheme === 'light' ? 'light' : 'dark');
+    document.getElementById('toggleTheme')?.addEventListener('click', () => {
+        const isLight = document.body.getAttribute('data-theme') === 'light';
+        const next = isLight ? 'dark' : 'light';
+        localStorage.setItem(THEME_KEY, next);
+        applyTheme(next);
+    });
     const dataSource = new DemoDataSource(demoFactory, 'demo.kanban.v6', logger);
     const state = new KanbanState(dataSource, { logger });
     await state.load();
-    const view = new KanbanView(root, state, logger);
+    let view = new KanbanView(root, state, logger);
 
     // Open popup with unified create-ticket flow
     document.getElementById('createTicket')?.addEventListener('click', () => openCreateTicketPopup({ view, state, logger }));
@@ -53,6 +71,86 @@ import openCreateTicketPopup from './ui/createTicket';
         await state.reset(cfg);
         view.dispose?.();
         // Re-render with current state
-        new KanbanView(root, state, logger);
+                view = new KanbanView(root, state, logger);
+    });
+
+        // Import JSON via popup (file or paste)
+        document.getElementById('importJson')?.addEventListener('click', () => {
+                if (!view?.popup) return;
+                const wrap = document.createElement('div');
+                wrap.innerHTML = `
+                        <form class="ticket-form" id="import-form">
+                            <div class="tf-grid">
+                                <div class="tf-field">
+                                    <label class="tf-label">Fichier JSON</label>
+                                    <input class="tf-input" type="file" id="import-file" accept="application/json,.json" />
+                                </div>
+                                <div class="tf-field">
+                                    <label class="tf-label">Ou collez le JSON</label>
+                                    <textarea class="tf-input" id="import-text" rows="8" placeholder="{\n  \"board\": { ... },\n  \"columns\": [ ... ]\n}"></textarea>
+                                </div>
+                                <div class="tf-actions">
+                                    <button type="submit" class="btn">Importer</button>
+                                </div>
+                            </div>
+                        </form>
+                `;
+                const form = wrap.querySelector('#import-form');
+                const fileInput = wrap.querySelector('#import-file');
+                const textInput = wrap.querySelector('#import-text');
+
+                const parsePayload = async () => {
+                        if (fileInput.files && fileInput.files[0]) {
+                                const txt = await fileInput.files[0].text();
+                                return JSON.parse(txt);
+                        }
+                        if (textInput.value.trim()) {
+                                return JSON.parse(textInput.value);
+                        }
+                        throw new Error('Aucune donnée fournie');
+                };
+
+                const validSnapshot = (obj) => {
+                        if (!obj || typeof obj !== 'object') return false;
+                        if (!Array.isArray(obj.columns)) return false;
+                        if (obj.board && typeof obj.board !== 'object') return false;
+                        return true;
+                };
+
+                wrap.addEventListener('submit', async (e) => {
+                        e.preventDefault();
+                        try {
+                                const data = await parsePayload();
+                                if (!validSnapshot(data)) throw new Error('Format invalide: attendez { board?, columns: [] }');
+                                // Normalize minimal snapshot: ensure columns id/name
+                                data.columns = (data.columns || []).map(c => ({ id: String(c.id), name: String(c.name), tickets: Array.isArray(c.tickets) ? c.tickets : [] }));
+                                await state.reset(data);
+                                view.dispose?.();
+                                view = new KanbanView(root, state, logger);
+                                view.popup.close();
+                        } catch (err) {
+                                alert('Import échoué: ' + (err?.message || err));
+                        }
+                }, { once: true });
+
+                view.popup.open({ title: 'Importer un board JSON', content: wrap });
+        });
+
+    // Download JSON snapshot (board meta + columns + tickets)
+    document.getElementById('downloadJson')?.addEventListener('click', () => {
+        const snapshot = {
+            board: state.board,
+            columns: state.columns.map(c => ({ id: c.id, name: c.name, tickets: c.tickets.map(t => (typeof t.toJSON === 'function' ? t.toJSON() : t)) }))
+        };
+        const blob = new Blob([JSON.stringify(snapshot, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        const date = new Date().toISOString().slice(0,19).replace(/[:T]/g,'-');
+        a.href = url;
+        a.download = `kanban-board-${date}.json`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
     });
 })();

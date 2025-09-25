@@ -47,7 +47,8 @@
   --kanban-drag-outline: 2px dashed rgba(110,168,254,.4);
 }
 
-/* Optional light theme override */
+/* Optional light theme override (applies when set on #kanban or an ancestor) */
+#kanban[data-theme="light"],
 [data-theme="light"] {
   --kanban-bg: #f8fafc;
   --kanban-text: #0f172a;
@@ -58,6 +59,8 @@
   --kanban-count-bg: #e2e8f0;
   --kanban-btn-bg: #e2e8f0;
   --kanban-btn-bg-hover: #cbd5e1;
+  --kanban-btn-border: #cbd5e1;
+  --kanban-accent: #2563eb;
 }
 
 html, body { height: 100%; }
@@ -167,6 +170,13 @@ body {
 
 /* Generic taxonomy chips fallback */
 #kanban .taxo-chip { display:inline-block; padding:2px 6px; border-radius:8px; font-size:11px; background: rgba(125,125,125,0.15); color: var(--kanban-muted); border:1px solid rgba(125,125,125,0.25); }
+
+/* Light theme component tweaks for contrast */
+#kanban[data-theme="light"] .complexity,
+[data-theme="light"] #kanban .complexity { background:#f1f5f9; color:#0f172a; border-color:#cbd5e1; }
+
+#kanban[data-theme="light"] .taxo-chip,
+[data-theme="light"] #kanban .taxo-chip { background: rgba(0,0,0,0.06); border-color: rgba(0,0,0,0.12); }
 
 /* Example styling hints for dynamically added taxonomies (optional) */
 #kanban .taxo-priority-high { background:#ffe0e0; color:#b40000; border-color:#ffb3b3; }
