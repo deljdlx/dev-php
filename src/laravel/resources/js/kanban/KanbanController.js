@@ -374,8 +374,12 @@ export default class KanbanController {
   downloadJson() {
     const snapshot = {
       board: this.state.board,
-      columns: this.state.columns.map(c => ({ id: c.id, name: c.name, tickets: c.tickets.map(t => (typeof t.toJSON === 'function' ? t.toJSON() : t)) }))
+      columns: this.state.columns.map(c => ({ id: c.id, name: c.name, tickets: c.tickets.map(t => (typeof t.toJSON === 'function' ? t.toJSON() : t)) })),
     };
+    try {
+      const bg = this.storage.getItem(this.BG_IMG_KEY);
+      if (bg) snapshot.background = { image: bg };
+    } catch {}
     const blob = new Blob([JSON.stringify(snapshot, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -427,7 +431,7 @@ export default class KanbanController {
       throw new Error('Aucune donnée fournie');
     };
 
-    const validSnapshot = (obj) => {
+  const validSnapshot = (obj) => {
       if (!obj || typeof obj !== 'object') return false;
       if (!Array.isArray(obj.columns)) return false;
       if (obj.board && typeof obj.board !== 'object') return false;
@@ -463,6 +467,14 @@ export default class KanbanController {
         if (!validSnapshot(data)) throw new Error('Format invalide: attendez { board?, columns: [] }');
         data.columns = (data.columns || []).map(c => ({ id: String(c.id), name: String(c.name), tickets: Array.isArray(c.tickets) ? c.tickets : [] }));
         await this.state.reset(data);
+        // Restore background image if present
+        try {
+          const bg = data?.background?.image;
+          if (bg && typeof bg === 'string') {
+            this.storage.setItem(this.BG_IMG_KEY, bg);
+            this.setBackgroundImage(bg);
+          }
+        } catch {}
         this.view.dispose?.();
         this.view = new KanbanView(this.root, this.state, this.logger);
         this.initFilters();
