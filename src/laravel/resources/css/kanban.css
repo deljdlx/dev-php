@@ -248,3 +248,6 @@ body {
 
 @media (max-width: 1100px) { .board { grid-template-columns: repeat(2, minmax(var(--kanban-col-min), var(--kanban-col-max))); } }
 @media (max-width: 600px) { .board { grid-template-columns: 1fr; } }
+
+/* Particle canvas overlay (purely decorative) */
+.particles-canvas { pointer-events: none; }
