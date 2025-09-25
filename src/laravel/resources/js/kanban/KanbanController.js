@@ -15,7 +15,7 @@ export default class KanbanController {
     this.THEME_KEY = 'kanban.theme';
   this.FILTER_LOGIC_KEY = 'kanban.filter.logic';
   this._filterLogic = (localStorage.getItem(this.FILTER_LOGIC_KEY) === 'OR') ? 'OR' : 'AND';
-  this.BG_IMG_SESSION_KEY = 'kanban.bgImage.session';
+  this.BG_IMG_KEY = 'kanban.bgImage';
   }
 
   async init() {
@@ -62,8 +62,8 @@ export default class KanbanController {
         reader.onload = () => {
           const dataUrl = reader.result;
           this.setBackgroundImage(dataUrl);
-          // Store just for the session to avoid localStorage quota issues
-          try { sessionStorage.setItem(this.BG_IMG_SESSION_KEY, dataUrl); } catch {}
+          // Persist in localStorage like other Kanban data
+          try { localStorage.setItem(this.BG_IMG_KEY, dataUrl); } catch {}
         };
         reader.readAsDataURL(img);
       } catch {}
@@ -81,9 +81,9 @@ export default class KanbanController {
     window.addEventListener('dragover', over);
     window.addEventListener('dragleave', leave);
     window.addEventListener('drop', drop);
-    // Restore from session if present
+    // Restore from localStorage if present
     try {
-      const cached = sessionStorage.getItem(this.BG_IMG_SESSION_KEY);
+      const cached = localStorage.getItem(this.BG_IMG_KEY);
       if (cached) this.setBackgroundImage(cached);
     } catch {}
   }
