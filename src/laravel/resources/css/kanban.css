@@ -63,6 +63,32 @@
   --kanban-accent: #2563eb;
 }
 
+/* Full-page custom background image */
+body.has-custom-bg {
+  background-image: var(--_kanban-bg-img);
+  background-image: none; /* fallback overridden by inline style from controller */
+  background-position: center center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  background-size: cover;
+}
+/* Add a subtle overlay for readability */
+body.has-custom-bg::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: rgba(0,0,0,0.25);
+  z-index: 0;
+}
+#app, #kanban, body > * { position: relative; z-index: 1; }
+
+/* Visual hint when dragging files over the page */
+body.bg-drag-active {
+  outline: 4px dashed var(--kanban-accent);
+  outline-offset: -8px;
+}
+
 html, body { height: 100%; }
 body {
   margin: 0;

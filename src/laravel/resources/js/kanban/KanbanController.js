@@ -15,6 +15,7 @@ export default class KanbanController {
     this.THEME_KEY = 'kanban.theme';
   this.FILTER_LOGIC_KEY = 'kanban.filter.logic';
   this._filterLogic = (localStorage.getItem(this.FILTER_LOGIC_KEY) === 'OR') ? 'OR' : 'AND';
+  this.BG_IMG_SESSION_KEY = 'kanban.bgImage.session';
   }
 
   async init() {
@@ -25,6 +26,73 @@ export default class KanbanController {
     this.initFilters();
   this.bindToolbar();
   this.hookViewFiltering();
+    this.initBackgroundDnD();
+  }
+
+  initBackgroundDnD() {
+    let dragDepth = 0;
+    const isFromModal = (target) => !!(target && (target.closest?.('.modal') || target.closest?.('.modal-dropzone')));
+    const enter = (e) => {
+      // Only react to file drags, not text selections
+      if (e.dataTransfer && !Array.from(e.dataTransfer.types || []).includes('Files')) return;
+      dragDepth++;
+      document.body.classList.add('bg-drag-active');
+      e.preventDefault();
+    };
+    const over = (e) => {
+      if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
+      e.preventDefault();
+    };
+    const leave = (e) => {
+      dragDepth = Math.max(0, dragDepth - 1);
+      if (dragDepth === 0) document.body.classList.remove('bg-drag-active');
+      e.preventDefault();
+    };
+    const drop = (e) => {
+      e.preventDefault();
+      dragDepth = 0;
+      document.body.classList.remove('bg-drag-active');
+      if (isFromModal(e.target)) return; // let modals/import handle their own DnD
+      const files = Array.from(e.dataTransfer?.files || []);
+      if (!files.length) return;
+      const img = files.find(f => (f.type || '').startsWith('image/'));
+      if (!img) return;
+      try {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const dataUrl = reader.result;
+          this.setBackgroundImage(dataUrl);
+          // Store just for the session to avoid localStorage quota issues
+          try { sessionStorage.setItem(this.BG_IMG_SESSION_KEY, dataUrl); } catch {}
+        };
+        reader.readAsDataURL(img);
+      } catch {}
+    };
+    // Clean previous listeners if any
+    if (this._bgHandlers) {
+      const { enter: a, over: b, leave: c, drop: d } = this._bgHandlers;
+      window.removeEventListener('dragenter', a);
+      window.removeEventListener('dragover', b);
+      window.removeEventListener('dragleave', c);
+      window.removeEventListener('drop', d);
+    }
+    this._bgHandlers = { enter, over, leave, drop };
+    window.addEventListener('dragenter', enter);
+    window.addEventListener('dragover', over);
+    window.addEventListener('dragleave', leave);
+    window.addEventListener('drop', drop);
+    // Restore from session if present
+    try {
+      const cached = sessionStorage.getItem(this.BG_IMG_SESSION_KEY);
+      if (cached) this.setBackgroundImage(cached);
+    } catch {}
+  }
+
+  setBackgroundImage(url) {
+    if (!url) return;
+    const b = document.body;
+    b.style.backgroundImage = `url('${url}')`;
+    b.classList.add('has-custom-bg');
   }
 
   initFilters() {
