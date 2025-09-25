@@ -171,8 +171,11 @@ class KanbanState {
                     tx[k] = { label, options };
                 }
                 this.board = { taxonomies: tx };
+                if (typeof board.backgroundImage === 'string' && board.backgroundImage) {
+                    this.board.backgroundImage = board.backgroundImage;
+                }
                 if (typeof this.dataSource.setBoardMeta === 'function') {
-                    await this.dataSource.setBoardMeta({ taxonomies: tx });
+                    await this.dataSource.setBoardMeta(this.board);
                 }
             }
             this.columns = (newData.columns || []).map(c => c instanceof Column ? c : new Column(c));

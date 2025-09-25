@@ -26,7 +26,11 @@ function normalizeBoardMeta(meta) {
       warn(`Taxonomy '${k}' ignored: expected { options } or array, got`, v);
     }
   }
-  return { taxonomies: out };
+  const board = { taxonomies: out };
+  if (typeof meta?.backgroundImage === 'string' && meta.backgroundImage) {
+    board.backgroundImage = meta.backgroundImage;
+  }
+  return board;
 }
 
 /**
