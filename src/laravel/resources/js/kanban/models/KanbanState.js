@@ -1,5 +1,6 @@
 import Column from './Column';
 import Ticket from './Ticket';
+import { Taxonomies } from './Taxonomy';
 import { sanitizeTaxonomies, legacyToTaxonomies, ALLOWED_TAXONOMIES } from '../utils/taxonomies';
 
 /**
@@ -57,6 +58,8 @@ class KanbanState {
     #persistHandler;
     #persistTimer = null;
     #persistDebounceMs = 0;
+    /** @type {Taxonomies|null} */
+    _taxonomies = null;
 
     /**
      * @param {object} dataSource - must implement getColumns() and save(columns)
@@ -71,6 +74,7 @@ class KanbanState {
         this.columns = [];
         this.board = defaultBoardFromAllowed();
         this.logger = options.logger;
+    this._taxonomies = new Taxonomies(this.board.taxonomies);
 
         // Default persistence calls the data source; can be overridden via options or setPersist()
         this.#persistHandler = options.persist || (async (columns) => {
@@ -89,31 +93,43 @@ class KanbanState {
     }
 
     getTaxonomyOptions(key) {
-        const meta = this.board?.taxonomies?.[key];
-        if (!meta) return [];
-        const opts = meta.options || [];
-        return Array.isArray(opts) ? opts : [];
+        const tx = this._taxonomies || new Taxonomies(this.board?.taxonomies || {});
+        return tx.getOptions(key) || [];
     }
 
     getTaxonomyMeta(key) {
-        const meta = this.board?.taxonomies?.[key];
-        if (!meta) return { label: key, options: [] };
-        return { label: meta.label || key, options: Array.isArray(meta.options) ? meta.options : [] };
+        const tx = this._taxonomies || new Taxonomies(this.board?.taxonomies || {});
+        return tx.getMeta(key);
     }
 
     getAllowedMap() {
-        // Build a map key -> Set(options) for sanitization
-        const src = this.board?.taxonomies || {};
-        const out = {};
-        for (const [k, v] of Object.entries(src)) {
-            const keys = (Array.isArray(v?.options) ? v.options : []).map(o => o.key);
-            out[k] = new Set(keys);
-        }
-        return out;
+        const tx = this._taxonomies || new Taxonomies(this.board?.taxonomies || {});
+        return tx.allowedMap();
     }
 
     getTaxonomyKeys() {
-        return Object.keys(this.board?.taxonomies || {});
+        const tx = this._taxonomies || new Taxonomies(this.board?.taxonomies || {});
+        return tx.keys();
+    }
+
+    /**
+     * Normalize and apply board meta into state.board and internal Taxonomies model
+     * @param {BoardMeta|any} board
+     */
+    #applyBoard(board) {
+        // Normalize taxonomies to { key: {label, options[]} }
+        const tx = {};
+        for (const [k, v] of Object.entries(board?.taxonomies || {})) {
+            const arr = Array.isArray(v?.options) ? v.options : [];
+            tx[k] = { label: v?.label || k, options: arr };
+        }
+        this.board = {
+            name: (typeof board?.name === 'string' && board.name.trim()) ? board.name.trim() : undefined,
+            backgroundImage: (typeof board?.backgroundImage === 'string' && board.backgroundImage) ? board.backgroundImage : undefined,
+            taxonomies: tx,
+            authors: Array.isArray(board?.authors) ? board.authors : [],
+        };
+        this._taxonomies = new Taxonomies(this.board.taxonomies);
     }
 
     async loadColumns() {
@@ -121,18 +137,7 @@ class KanbanState {
         // Load board meta first if available
         if (typeof this.dataSource.getBoardMeta === 'function') {
             const board = await this.dataSource.getBoardMeta();
-            // normalize taxonomies to { key: {label, options[]} }
-            const tx = {};
-            for (const [k, v] of Object.entries(board?.taxonomies || {})) {
-                const arr = Array.isArray(v?.options) ? v.options : [];
-                tx[k] = { label: v.label || k, options: arr };
-            }
-            this.board = {
-                name: (typeof board?.name === 'string' && board.name.trim()) ? board.name.trim() : undefined,
-                backgroundImage: (typeof board?.backgroundImage === 'string' && board.backgroundImage) ? board.backgroundImage : undefined,
-                taxonomies: tx,
-                authors: Array.isArray(board?.authors) ? board.authors : [],
-            };
+            this.#applyBoard(board);
         }
         const meta = await (this.dataSource.getColumnsMeta?.() ?? this.dataSource.getColumns());
         // normalize to Column[] with empty tickets
@@ -166,17 +171,7 @@ class KanbanState {
             // When only getColumns() exists, try to get board meta explicitly
             if (typeof this.dataSource.getBoardMeta === 'function') {
                 const board = await this.dataSource.getBoardMeta();
-                const tx = {};
-                for (const [k, v] of Object.entries(board?.taxonomies || {})) {
-                    const arr = Array.isArray(v?.options) ? v.options : [];
-                    tx[k] = { label: v.label || k, options: arr };
-                }
-                this.board = {
-                    name: (typeof board?.name === 'string' && board.name.trim()) ? board.name.trim() : undefined,
-                    backgroundImage: (typeof board?.backgroundImage === 'string' && board.backgroundImage) ? board.backgroundImage : undefined,
-                    taxonomies: tx,
-                    authors: Array.isArray(board?.authors) ? board.authors : [],
-                };
+                this.#applyBoard(board);
             }
             this.columns = await this.dataSource.getColumns();
         }
@@ -242,20 +237,21 @@ class KanbanState {
             this.columns = newData.map(c => c instanceof Column ? c : new Column(c));
         } else if (newData && typeof newData === 'object') {
             const board = newData.board || {};
-            // Normalize incoming board meta to { name?, backgroundImage?, taxonomies: { key: {label, options[]} } }
-            const tx = {};
-            for (const [k, v] of Object.entries(board.taxonomies || {})) {
-                const label = v?.label || k;
-                const arr = Array.isArray(v?.options) ? v.options : (Array.isArray(v) ? v : []);
-                const options = arr.map(o => (typeof o === 'object' && o && 'key' in o) ? o : { key: String(o), label: String(o) });
-                tx[k] = { label, options };
-            }
-            this.board = {
-                name: (typeof board.name === 'string' && board.name.trim()) ? board.name.trim() : undefined,
-                backgroundImage: (typeof board.backgroundImage === 'string' && board.backgroundImage) ? board.backgroundImage : undefined,
-                taxonomies: tx,
-                authors: Array.isArray(board?.authors) ? board.authors : [],
+            // Normalize and apply board meta
+            const norm = {
+                ...board,
+                taxonomies: (() => {
+                    const out = {};
+                    for (const [k, v] of Object.entries(board.taxonomies || {})) {
+                        const label = v?.label || k;
+                        const arr = Array.isArray(v?.options) ? v.options : (Array.isArray(v) ? v : []);
+                        const options = arr.map(o => (typeof o === 'object' && o && 'key' in o) ? o : { key: String(o), label: String(o) });
+                        out[k] = { label, options };
+                    }
+                    return out;
+                })()
             };
+            this.#applyBoard(norm);
             if (typeof this.dataSource.setBoardMeta === 'function') {
                 await this.dataSource.setBoardMeta(this.board);
             }
