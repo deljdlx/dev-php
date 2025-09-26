@@ -13,6 +13,19 @@
  */
 
 class Ticket {
+    /*
+     * ==== Properties (overview) ====
+     * - id: string
+     * - title: string
+     * - description: string|null
+     * - author: string|null            (legacy display name)
+     * - authorId: string|null          (entity id reference)
+     * - label: 'blue'|'green'|'orange'|null        (legacy shim)
+     * - category: 'bug'|'feature'|'docs'|'chore'|null (legacy shim)
+     * - complexity: 'xs'|'s'|'m'|'l'|'xl'|null     (legacy shim)
+     * - taxonomies: Record<string,string|null>|undefined
+     * - createdAt: number (epoch ms)
+     */
     /** @param {{ id?: string, title: string, label?: 'blue'|'green'|'orange'|null, category?: 'bug'|'feature'|'docs'|'chore'|null, description?: string|null, author?: string|null, authorId?: string|null, complexity?: 'xs'|'s'|'m'|'l'|'xl'|null, taxonomies?: Record<string,string|null>, createdAt?: number }} param0 */
     constructor({ id, title, label = null, category = null, description = null, author = null, authorId = null, complexity = null, taxonomies = undefined, createdAt = Date.now() }) {
         this.id = id ?? (crypto?.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2));
@@ -20,18 +33,18 @@ class Ticket {
         this.label = label; // legacy shim
         this.category = category; // legacy shim
         this.description = description ?? null;
-    this.author = author ?? null; // legacy
-    this.authorId = authorId ?? null; // entity ref
+        this.author = author ?? null; // legacy
+        this.authorId = authorId ?? null; // entity ref
         this.complexity = complexity ?? null; // legacy shim
         this.taxonomies = taxonomies ?? undefined; // generic bag
         this.createdAt = createdAt;
     }
     /** @returns {TicketDTO} */
     toJSON() {
-    const base = { id: this.id, title: this.title, description: this.description, author: this.author, authorId: this.authorId, createdAt: this.createdAt };
-    // Prefer taxonomies bag; fall back to legacy shim if needed
-    const tx = this.taxonomies || { label: this.label ?? null, category: this.category ?? null, complexity: this.complexity ?? null };
-    return { ...base, taxonomies: tx };
+        const base = { id: this.id, title: this.title, description: this.description, author: this.author, authorId: this.authorId, createdAt: this.createdAt };
+        // Prefer taxonomies bag; fall back to legacy shim if needed
+        const tx = this.taxonomies || { label: this.label ?? null, category: this.category ?? null, complexity: this.complexity ?? null };
+        return { ...base, taxonomies: tx };
     }
     /** @param {TicketDTO & {taxonomies?: Record<string,string|null>}} dto */
     static fromJSON(dto) {
