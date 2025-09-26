@@ -26,11 +26,11 @@ function commonSetup(zIndex = 5) {
 
 function startSoftTrail(options = {}) {
   const cfg = {
-    maxParticles: options.maxParticles ?? 140,
-    spawnPerMove: options.spawnPerMove ?? 6,
+  maxParticles: options.maxParticles ?? 160,
+  spawnPerMove: options.spawnPerMove ?? 8,
     baseSize: options.baseSize ?? 2.6,
     sizeJitter: options.sizeJitter ?? 1.8,
-    friction: options.friction ?? 0.92,
+  friction: options.friction ?? 0.965,
     gravity: options.gravity ?? -0.006,
     fade: options.fade ?? 0.03,
     zIndex: options.zIndex ?? 5,
@@ -38,6 +38,12 @@ function startSoftTrail(options = {}) {
     baseAlpha: options.baseAlpha ?? 0.65,
     glow: options.glow ?? true,
     clickBurst: options.clickBurst ?? 12,
+  // dispersion controls
+  dispersion: options.dispersion ?? 3.6,           // multiplies initial drift
+  wanderStrength: options.wanderStrength ?? 0.06,  // per-frame tiny noise accel
+  wanderSpeed: options.wanderSpeed ?? 0.5,         // how fast wander evolves
+  perpSpread: options.perpSpread ?? 14,            // spawn offset perpendicular to motion (px)
+  alongJitter: options.alongJitter ?? 2,           // small along-motion jitter (px)
   };
 
   let raf = null; let running = true;
@@ -46,19 +52,28 @@ function startSoftTrail(options = {}) {
   const clamp = (n,a,b)=>Math.max(a,Math.min(b,n));
 
   let last = { x: window.innerWidth/2, y: window.innerHeight/2 };
+  let lastDir = { x: 1, y: 0 }; // normalized recent motion direction
   let pending = 0; // distance accumulator for even spacing
 
   function spawnAt(x, y, n = 1) {
     for (let i=0; i<n; i++) {
       if (parts.length >= cfg.maxParticles) parts.shift();
       const angle = Math.random() * Math.PI * 2;
-      const sp = Math.random() * 0.4; // gentle initial drift
+      const sp = Math.random() * 0.4 * cfg.dispersion; // more dispersion
+      // spawn position jitter perpendicular/along to motion
+      const perp = { x: -lastDir.y, y: lastDir.x };
+      const offP = (Math.random()*2 - 1) * cfg.perpSpread;
+      const offA = (Math.random()*2 - 1) * cfg.alongJitter;
+      const sx = x + perp.x * offP + lastDir.x * offA;
+      const sy = y + perp.y * offP + lastDir.y * offA;
       parts.push({
-        x, y,
+        x: sx, y: sy,
         vx: Math.cos(angle) * sp,
         vy: Math.sin(angle) * sp,
         size: cfg.baseSize + Math.random()*cfg.sizeJitter,
         alpha: cfg.baseAlpha,
+        wPhase: Math.random() * Math.PI * 2,
+        wAmp: cfg.wanderStrength * (0.6 + Math.random()*0.8),
       });
     }
   }
@@ -76,6 +91,7 @@ function startSoftTrail(options = {}) {
     const x = e.clientX, y = e.clientY;
     const dx = x - last.x, dy = y - last.y;
     const dist = Math.hypot(dx, dy);
+  if (dist > 0.001) { lastDir.x = dx / dist; lastDir.y = dy / dist; }
     // spawn particles spaced ~every 8px for a continuous soft tail
     const spacing = 8;
     pending += dist;
@@ -95,7 +111,12 @@ function startSoftTrail(options = {}) {
     ctx.clearRect(0,0,canvas.width,canvas.height);
     for (let i=parts.length-1; i>=0; i--) {
       const p = parts[i];
-      p.vx *= cfg.friction; p.vy = p.vy*cfg.friction + cfg.gravity;
+  // gentle wander noise to increase dispersion over time
+  p.wPhase += cfg.wanderSpeed * (0.8 + Math.random()*0.4) * 0.016; // frame-based
+  p.vx += Math.cos(p.wPhase) * p.wAmp;
+  p.vy += Math.sin(p.wPhase * 1.7) * p.wAmp * 0.6;
+  // integrate velocity with friction and slight upward drift
+  p.vx *= cfg.friction; p.vy = p.vy*cfg.friction + cfg.gravity;
       p.x += p.vx; p.y += p.vy;
       p.alpha -= cfg.fade;
       if (p.alpha <= 0.02) { parts.splice(i,1); continue; }
