@@ -1,3 +1,5 @@
+/* mouse trail canvas overlay */
+.particles-canvas { pointer-events: none; }
 /* Kanban styles with maximal CSS variable usage */
 :root {
   /* Colors */
@@ -250,4 +252,3 @@ body {
 @media (max-width: 600px) { .board { grid-template-columns: 1fr; } }
 
 /* Particle canvas overlay (purely decorative) */
-.particles-canvas { pointer-events: none; }
