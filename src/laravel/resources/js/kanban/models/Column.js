@@ -8,6 +8,12 @@
 import Ticket from './Ticket';
 
 class Column {
+    /*
+     * ==== Properties (overview) ====
+     * - id: string                (e.g. 'todo', 'doing', 'review', 'done')
+     * - name: string              (display name)
+     * - tickets: Ticket[]
+     */
     /** @param {{ id: string, name: string, tickets?: (Ticket[]|any[]) }} param0 */
     constructor({ id, name, tickets = [] }) {
         this.id = id; // e.g. todo, doing, review, done
