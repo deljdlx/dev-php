@@ -1,5 +1,13 @@
 // Lightweight models to encapsulate taxonomy logic without changing external APIs
 
+//
+// ==== Properties (overview) ====
+// Taxonomy
+// - key: string
+// - label: string
+// - options: Array<{ key: string, label: string }>
+// - _allowed: Set<string> (internal lookup)
+//
 export class Taxonomy {
   constructor(key, label, options) {
     this.key = String(key);
@@ -25,6 +33,10 @@ export class Taxonomy {
 }
 
 export class Taxonomies {
+  //
+  // ==== Properties (overview) ====
+  // - _map: Map<string, Taxonomy>
+  //
   constructor(record) {
     const src = record && typeof record === 'object' ? record : {};
     this._map = new Map();
