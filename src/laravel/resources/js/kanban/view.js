@@ -90,6 +90,7 @@ export class KanbanView {
     createCardElement(ticket) {
         return new TicketCard(ticket, {
             allowedMap: this.state.getAllowedMap?.(),
+                authors: Array.isArray(this.state.board?.authors) ? this.state.board.authors : [],
             onClick: (id, el, data) => {
                 this.logger?.debug('ticket.click', { id });
                 this.popup.open({
@@ -119,11 +120,13 @@ export class KanbanView {
                             const label = escapeHtml(String(this.state.getTaxonomyMeta?.(k)?.label || k));
                             return `<div class=\"ticket-field ticket-taxo-${escapeHtml(String(k))}\"><span class=\"field-label\">${label}:</span><span class=\"field-value\">${chip}</span></div>`;
                         }).join('');
+                        const authors = Array.isArray(this.state.board?.authors) ? this.state.board.authors : [];
+                        const authorName = (data?.authorId ? (authors.find(a => a.id === data.authorId)?.name) : null) || data?.author || null;
                         wrap.innerHTML = `
                             <div class=\"ticket-details\">
                                 <div class=\"ticket-field ticket-author\">
                                     <span class=\"field-label\">Auteur:</span>
-                                    <span class=\"field-value\">${data?.author ? escapeHtml(String(data.author)) : '-'}</span>
+                                    <span class=\"field-value\">${authorName ? escapeHtml(String(authorName)) : '-'}</span>
                                 </div>
                                 ${txRows}
                                 <div class=\"ticket-field ticket-created\">

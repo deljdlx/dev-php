@@ -14,9 +14,15 @@ function demoFactory() {
     'Ajouter des tests unitaires minimaux.',
   ];
 
-  const authors = ['Alice', 'Bob', 'Chloé', 'David'];
+  const authors = [
+    { id: 'u-alice', name: 'Alice' },
+    { id: 'u-bob', name: 'Bob' },
+    { id: 'u-chloe', name: 'Chloé' },
+    { id: 'u-david', name: 'David' },
+  ];
   const board = {
     name: 'Kanban demo',
+    authors,
     taxonomies: {
       label: { label: 'Couleur', options: [
         { key: 'blue', label: 'BLEU' },
@@ -51,10 +57,11 @@ function demoFactory() {
       const picked = Math.random() < 0.25 ? null : (opts.length ? pick(opts) : null);
       chosen[key] = picked ? picked.key : null;
     }
+    const a = pick(authors);
     return new Ticket({
       title: pick(sampleTitles) + ' #' + Math.floor(Math.random()*900+100),
       description: pick(sampleDescs),
-      author: pick(authors),
+      authorId: a.id,
       taxonomies: chosen,
     });
   });

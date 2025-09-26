@@ -72,12 +72,16 @@ class TicketCard {
 
   const descHtml = this.ticket.description ? `<div class="card-desc">${escapeHtml(this.ticket.description)}</div>` : '';
 
+  // author rendering: prefer entity name via authorId, fallback to legacy author string
+  const authors = Array.isArray(this?.opts?.authors) ? this.opts.authors : (Array.isArray(window.__kanbanAuthors) ? window.__kanbanAuthors : []);
+  const authorName = (this.ticket.authorId ? (authors.find(a => a.id === this.ticket.authorId)?.name) : null) || this.ticket.author || null;
+
   el.innerHTML = `
       <div class="card-title">${escapeHtml(this.ticket.title)}</div>
       ${descHtml}
       <div class="card-meta">
     <span>${formatTicketDate(this.ticket.createdAt)}</span>
-  ${this.ticket.author ? `<span class="author">${escapeHtml(this.ticket.author)}</span>` : ''}
+  ${authorName ? `<span class="author">${escapeHtml(authorName)}</span>` : ''}
     ${chips.join(' ')}
       </div>
     `;

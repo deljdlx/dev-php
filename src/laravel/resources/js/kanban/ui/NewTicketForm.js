@@ -3,7 +3,7 @@ import escapeHtml from '../utils/escapeHtml';
 /**
  * NewTicketForm renders a form for creating a ticket and returns {el, getData}
  */
-export default function NewTicketForm({ getOptions, getKeys, getMeta } = { getOptions: (k) => [], getKeys: () => [], getMeta: (k) => ({ label: k, options: [] }) }) {
+export default function NewTicketForm({ getOptions, getKeys, getMeta, getAuthors } = { getOptions: (k) => [], getKeys: () => [], getMeta: (k) => ({ label: k, options: [] }), getAuthors: () => [] }) {
   const el = document.createElement('form');
   el.className = 'ticket-form';
   // Config for taxonomy rendering without repetition
@@ -28,6 +28,7 @@ export default function NewTicketForm({ getOptions, getKeys, getMeta } = { getOp
     rowsAfter.push(`<div class="tf-row">${selects[i] || ''}${selects[i+1] || ''}</div>`);
   }
 
+  const authorOptions = (getAuthors?.() || []).map(a => `<option value="${escapeHtml(String(a.id))}">${escapeHtml(String(a.name))}</option>`).join('');
   el.innerHTML = `
     <div class="tf-grid">
       <label class="tf-field">
@@ -41,7 +42,10 @@ export default function NewTicketForm({ getOptions, getKeys, getMeta } = { getOp
       <div class="tf-row">
         <label class="tf-field">
           <span class="tf-label">Auteur</span>
-          <input class="tf-input" name="author" type="text" placeholder="Votre nom (optionnel)">
+          <select class="tf-input" name="authorId">
+            <option value="">--</option>
+            ${authorOptions}
+          </select>
         </label>
         ${firstSelect || ''}
       </div>
@@ -56,13 +60,13 @@ export default function NewTicketForm({ getOptions, getKeys, getMeta } = { getOp
     const fd = new FormData(el);
     const title = String(fd.get('title') || '').trim();
     const description = String(fd.get('description') || '').trim() || null;
-    const author = String(fd.get('author') || '').trim() || null;
+  const authorId = String(fd.get('authorId') || '').trim() || null;
   const taxonomies = (getKeys?.() || []).reduce((acc, key) => {
       const val = fd.get(key);
       acc[key] = val ? String(val) : null;
       return acc;
     }, {});
-    return { title, description, author, taxonomies };
+  return { title, description, authorId, taxonomies };
   }
 
   return { el, getData };

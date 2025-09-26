@@ -10,7 +10,7 @@ class KanbanState {
     constructor(dataSource, options = {}) {
         this.dataSource = dataSource;
         this.columns = [];
-    this.board = { taxonomies: Object.fromEntries(Object.entries(ALLOWED_TAXONOMIES).map(([k, set]) => [k, new Set(set)])) };
+    this.board = { taxonomies: Object.fromEntries(Object.entries(ALLOWED_TAXONOMIES).map(([k, set]) => [k, new Set(set)])), authors: [] };
         // Default persistence calls the data source as before; can be overridden via options or setPersist()
     this.#persistHandler = options.persist || (async (columns) => {
             await this.dataSource.save(columns);
@@ -65,6 +65,7 @@ class KanbanState {
                 name: (typeof board?.name === 'string' && board.name.trim()) ? board.name.trim() : undefined,
                 backgroundImage: (typeof board?.backgroundImage === 'string' && board.backgroundImage) ? board.backgroundImage : undefined,
                 taxonomies: tx,
+                authors: Array.isArray(board?.authors) ? board.authors : [],
             };
         }
         const meta = await (this.dataSource.getColumnsMeta?.() ?? this.dataSource.getColumns());
@@ -106,6 +107,7 @@ class KanbanState {
                     name: (typeof board?.name === 'string' && board.name.trim()) ? board.name.trim() : undefined,
                     backgroundImage: (typeof board?.backgroundImage === 'string' && board.backgroundImage) ? board.backgroundImage : undefined,
                     taxonomies: tx,
+                    authors: Array.isArray(board?.authors) ? board.authors : [],
                 };
             }
             this.columns = await this.dataSource.getColumns();
@@ -181,6 +183,7 @@ class KanbanState {
                 name: (typeof board.name === 'string' && board.name.trim()) ? board.name.trim() : undefined,
                 backgroundImage: (typeof board.backgroundImage === 'string' && board.backgroundImage) ? board.backgroundImage : undefined,
                 taxonomies: tx,
+                authors: Array.isArray(board?.authors) ? board.authors : [],
             };
             if (typeof this.dataSource.setBoardMeta === 'function') {
                 await this.dataSource.setBoardMeta(this.board);

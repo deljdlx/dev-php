@@ -3,7 +3,12 @@ import '../../css/kanban.css';
 import KanbanController from './KanbanController';
 import { MouseFX } from './ui/ParticlesFX';
 
-(async function bootstrap(){
+(async function bootstrap() {
+
+  console.group('%cindex.js :: 8 =============================', 'color: #135484; font-size: 1rem');
+  console.log('📅', new Date().toLocaleString());
+  console.groupEnd();
+
     const root = document.getElementById('kanban');
     if (!root) return;
     const controller = new KanbanController(root);

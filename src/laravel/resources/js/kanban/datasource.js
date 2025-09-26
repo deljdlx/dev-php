@@ -6,7 +6,7 @@ function warn(msg, extra) {
 
 function defaultBoardMeta() {
   // Minimal, taxonomy-agnostic default
-  return { taxonomies: {} };
+  return { taxonomies: {}, authors: [] };
 }
 
 function normalizeBoardMeta(meta) {
@@ -26,7 +26,8 @@ function normalizeBoardMeta(meta) {
       warn(`Taxonomy '${k}' ignored: expected { options } or array, got`, v);
     }
   }
-  const board = { taxonomies: out };
+  const authors = Array.isArray(meta?.authors) ? meta.authors.filter(a => a && typeof a === 'object' && a.id && a.name).map(a => ({ id: String(a.id), name: String(a.name), avatar: a.avatar ? String(a.avatar) : undefined })) : [];
+  const board = { taxonomies: out, authors };
   if (typeof meta?.name === 'string' && meta.name.trim()) {
     board.name = meta.name.trim();
   }

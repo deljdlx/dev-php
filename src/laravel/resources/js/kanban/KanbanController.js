@@ -403,13 +403,13 @@ export default class KanbanController {
       const picked = (opts.length ? opts[Math.floor(Math.random() * opts.length)] : null);
       taxonomies[key] = Math.random() < 0.25 ? null : (picked ? picked.key : null);
     }
-    const descs = ['Ticket généré pour test', 'Lorem ipsum dolor sit amet', 'Voir backlog pour contexte', 'Petite tâche technique'];
-    const authors = ['Alice', 'Bob', 'Chloé', 'David'];
+  const descs = ['Ticket généré pour test', 'Lorem ipsum dolor sit amet', 'Voir backlog pour contexte', 'Petite tâche technique'];
+  const authors = Array.isArray(this.state.board?.authors) ? this.state.board.authors : [];
     const ticket = {
       id: undefined,
       title: 'Tâche aléatoire ' + Math.floor(Math.random() * 1000),
       description: descs[Math.floor(Math.random() * descs.length)],
-      author: authors[Math.floor(Math.random() * authors.length)],
+  authorId: (authors.length ? authors[Math.floor(Math.random() * authors.length)].id : null),
       taxonomies,
       createdAt: Date.now()
     };

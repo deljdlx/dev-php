@@ -9,6 +9,7 @@ export default function openCreateTicketPopup({ view, state, logger, columnId } 
     getOptions: (k) => state.getTaxonomyOptions(k),
     getKeys: () => state.getTaxonomyKeys(),
     getMeta: (k) => state.getTaxonomyMeta(k),
+    getAuthors: () => Array.isArray(state.board?.authors) ? state.board.authors : [],
   });
 
   view.popup.open({
@@ -28,7 +29,7 @@ export default function openCreateTicketPopup({ view, state, logger, columnId } 
             id: undefined,
             title: data.title,
             description: data.description,
-            author: data.author,
+            authorId: data.authorId,
             taxonomies: data.taxonomies,
             createdAt: Date.now(),
           };
