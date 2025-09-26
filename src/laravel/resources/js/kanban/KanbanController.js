@@ -6,7 +6,7 @@ import createLogger from './utils/createLogger';
 import { KanbanView } from './view';
 import openCreateTicketPopup from './ui/createTicket';
 
-export default class KanbanController {
+export default class KanbanApplication {
   constructor(root = document.getElementById('kanban')) {
     this.root = root;
     this.logger = createLogger('Kanban');

@@ -1,6 +1,6 @@
 import '../bootstrap';
 import '../../css/kanban.css';
-import KanbanController from './KanbanController';
+import KanbanApplication from './KanbanApplication';
 import { MouseFX } from './ui/ParticlesFX';
 
 (async function bootstrap() {
@@ -11,7 +11,7 @@ import { MouseFX } from './ui/ParticlesFX';
 
     const root = document.getElementById('kanban');
     if (!root) return;
-    const controller = new KanbanController(root);
+  const controller = new KanbanApplication(root);
     await controller.init();
     // Soft mouse trail (gentle)
     try {
