@@ -3,7 +3,7 @@ import demoFactory from './demoFactory';
 import { DemoDataSourceAdapter as DemoDataSource } from './datasource/DataSourceAdapter';
 import { createDefaultStorage } from './storage/StorageStrategy';
 import createLogger from './utils/createLogger';
-import { KanbanView } from './view';
+import { KanbanView } from './KanbanView';
 import openCreateTicketPopup from './ui/createTicket';
 
 export default class KanbanApplication {

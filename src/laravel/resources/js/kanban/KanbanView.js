@@ -134,10 +134,7 @@ export class KanbanView {
                                     <span class=\"field-value\">${escapeHtml(new Date(data?.createdAt||Date.now()).toLocaleString())}</span>
                                 </div>
                                 ${data?.description ? `
-                                    <div class=\"ticket-field ticket-description\">
-                                        <span class=\"field-label\">Description:</span>
-                                        <div class=\"field-value\">${escapeHtml(String(data.description))}</div>
-                                    </div>
+                                    <div class=\"ticket-field ticket-description\">\n                                        <span class=\"field-label\">Description:</span>\n                                        <div class=\"field-value\">${escapeHtml(String(data.description))}</div>\n                                    </div>
                                 ` : ''}
                             </div>
                         `;
