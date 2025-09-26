@@ -1,4 +1,29 @@
 services:
+
+  # selenium/standalone-chrome
+
+  selenium:
+    image: selenium/standalone-chrome:latest
+    container_name: selenium
+    shm_size: 2g
+    restart: unless-stopped
+    ports:
+      - "4444:4444"   # WebDriver endpoint
+      - "7900:7900"   # noVNC UI
+    environment:
+      - TZ=Europe/Paris
+      - SE_NODE_MAX_SESSIONS=1
+      - SE_NODE_OVERRIDE_MAX_SESSIONS=true
+      # - SE_OPTS=--log-level FINE  # Uncomment for verbose logs
+    networks:
+      - app-net
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=app-net
+      - traefik.http.routers.selenium.rule=Host(`selenium.${DOMAIN:-localhost}`)
+      - traefik.http.routers.selenium.entrypoints=web
+      - traefik.http.services.selenium.loadbalancer.server.port=7900
+
   traefik:
     image: traefik:v3.1
     container_name: traefik
@@ -18,7 +43,7 @@ services:
       # - "443:443"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      # - ./letsencrypt:/letsencrypt
+      - ./letsencrypt:/letsencrypt
     labels:
       - traefik.enable=true
       - traefik.http.routers.traefik.rule=Host(`traefik.${DOMAIN:-localhost}`)
@@ -27,7 +52,11 @@ services:
       # - traefik.http.routers.traefik.tls=true
       # - traefik.http.routers.traefik.tls.certresolver=dev
     networks:
-      - app-net
+      app-net:
+        aliases :
+          - web.test
+          - monitor.test
+          - myurgo.test
 
   filebeat:
     image: docker.elastic.co/beats/filebeat:7.17.26
@@ -68,8 +97,6 @@ services:
       - ./docker/apache:/etc/apache2/sites-enabled:ro
       - app_logs:${LOG_WEB_PATH:-/var/logs/web}
 
-
-
     working_dir: /var/www/html
     environment:
       COMPOSER_HOME: /tmp/composer
@@ -90,19 +117,19 @@ services:
     labels:
       - traefik.enable=true
       - traefik.docker.network=app-net
-      - traefik.http.routers.web.rule=Host(`web.${DOMAIN:-localhost}`)
+      - traefik.http.routers.web.rule=Host(`web.${DOMAIN:-localhost}`) || web(`monitor.test`)
       - traefik.http.routers.web.entrypoints=web
       - traefik.http.routers.web.service=web
       - traefik.http.services.web.loadbalancer.server.port=80
       # - traefik.http.routers.web.tls=true
       # - traefik.http.routers.web.tls.certresolver=dev
       # Second site: monitor.localhost routed to same container
-      - traefik.http.routers.monitor.rule=Host(`monitor.${DOMAIN:-localhost}`)
+      - traefik.http.routers.monitor.rule=Host(`monitor.${DOMAIN:-localhost}`) || Host(`monitor.test`)
       - traefik.http.routers.monitor.entrypoints=web
       - traefik.http.routers.monitor.service=monitor
       - traefik.http.services.monitor.loadbalancer.server.port=80
 
-      - traefik.http.routers.myurgo.rule=Host(`myurgo.${DOMAIN:-localhost}`)
+      - traefik.http.routers.myurgo.rule=Host(`myurgo.${DOMAIN:-localhost}`) || Host(`myurgo.test`)
       - traefik.http.routers.myurgo.entrypoints=web
       - traefik.http.routers.myurgo.service=myurgo
       - traefik.http.services.myurgo.loadbalancer.server.port=80
