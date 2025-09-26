@@ -1,6 +1,6 @@
 import KanbanState from './models/KanbanState';
 import demoFactory from './demoFactory';
-import { DemoDataSource } from './datasource';
+import { DemoDataSourceAdapter as DemoDataSource } from './datasource/DataSourceAdapter';
 import { createDefaultStorage } from './storage/StorageStrategy';
 import createLogger from './utils/createLogger';
 import { KanbanView } from './view';
