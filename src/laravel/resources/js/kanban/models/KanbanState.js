@@ -1,6 +1,7 @@
 import Column from './Column';
 import Ticket from './Ticket';
 import { Taxonomies } from './Taxonomy';
+import { Users } from './User';
 import { sanitizeTaxonomies, legacyToTaxonomies, ALLOWED_TAXONOMIES } from '../utils/taxonomies';
 
 /**
@@ -60,6 +61,8 @@ class KanbanState {
     #persistDebounceMs = 0;
     /** @type {Taxonomies|null} */
     _taxonomies = null;
+    /** @type {Users|null} */
+    _authors = null;
 
     /**
      * @param {object} dataSource - must implement getColumns() and save(columns)
@@ -75,6 +78,7 @@ class KanbanState {
         this.board = defaultBoardFromAllowed();
         this.logger = options.logger;
     this._taxonomies = new Taxonomies(this.board.taxonomies);
+    this._authors = new Users(this.board.authors);
 
         // Default persistence calls the data source; can be overridden via options or setPersist()
         this.#persistHandler = options.persist || (async (columns) => {
@@ -123,13 +127,14 @@ class KanbanState {
             const arr = Array.isArray(v?.options) ? v.options : [];
             tx[k] = { label: v?.label || k, options: arr };
         }
-        this.board = {
+    this.board = {
             name: (typeof board?.name === 'string' && board.name.trim()) ? board.name.trim() : undefined,
             backgroundImage: (typeof board?.backgroundImage === 'string' && board.backgroundImage) ? board.backgroundImage : undefined,
             taxonomies: tx,
             authors: Array.isArray(board?.authors) ? board.authors : [],
         };
-        this._taxonomies = new Taxonomies(this.board.taxonomies);
+    this._taxonomies = new Taxonomies(this.board.taxonomies);
+    this._authors = new Users(this.board.authors);
     }
 
     async loadColumns() {
