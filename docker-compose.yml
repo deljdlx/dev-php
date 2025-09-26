@@ -1,6 +1,100 @@
 services:
 
-  # selenium/standalone-chrome
+  traefik:
+    image: traefik:v3.1
+    container_name: traefik
+    command:
+      - --api.dashboard=true
+      - --api.insecure=true
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --entrypoints.web.address=:80
+      # Pour HTTPS local avec mkcert, décommentez ci-dessous et ajoutez certs:
+      # - --entrypoints.websecure.address=:443
+      # - --certificatesresolvers.dev.acme.tlschallenge=true
+      # - --certificatesresolvers.dev.acme.email=you@example.com
+      # - --certificatesresolvers.dev.acme.storage=/letsencrypt/acme.json
+    ports:
+      - "80:80"
+      # - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # - ./letsencrypt:/letsencrypt
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.traefik.rule=Host(`traefik.${DOMAIN:-localhost}`)
+      - traefik.http.routers.traefik.entrypoints=web
+      - traefik.http.routers.traefik.service=api@internal
+      # - traefik.http.routers.traefik.tls=true
+      # - traefik.http.routers.traefik.tls.certresolver=dev
+    networks:
+      app-net:
+        aliases :
+          - web.test
+          - monitor.test
+          - myurgo.test
+
+
+  web:
+    # profiles: ["php8"]
+    build:
+      context: ./docker
+      dockerfile: Dockerfile
+    container_name: web
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "8080:80"
+      - "5173:5173"
+    volumes:
+      - ./src:/var/www/html
+      - ./src/tmp/xdebug-traces:/var/www/html/tmp/xdebug-traces
+      - composer_cache:/tmp/composer
+      # Load all Apache vhost files dynamically from host
+      - ./docker/apache:/etc/apache2/sites-enabled:ro
+      - app_logs:${LOG_WEB_PATH:-/var/logs/web}
+
+    working_dir: /var/www/html
+    environment:
+      COMPOSER_HOME: /tmp/composer
+      MYSQL_HOST: db
+      MYSQL_DATABASE: dev
+      MYSQL_USER: root
+      MYSQL_PASSWORD: rootpass
+      MARIADB_ROOT_PASSWORD: rootpass
+      # Elasticsearch endpoint for app logging
+      ELASTICSEARCH_URL: http://elasticsearch:9200
+      # XDEBUG_MODE: debug,develop
+      # XDEBUG_CONFIG: client_host=h+ost.docker.internal client_port=9003
+    depends_on:
+      - db
+      - elasticsearch
+    networks:
+      - app-net
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=app-net
+
+      - traefik.http.routers.web.rule=Host(`web.${DOMAIN:-localhost}`) || Host(`web.test`)
+      - traefik.http.routers.web.entrypoints=web
+      - traefik.http.routers.web.service=web
+      - traefik.http.services.web.loadbalancer.server.port=80
+
+      # - traefik.http.routers.web.tls=true
+      # - traefik.http.routers.web.tls.certresolver=dev
+      # Second site: monitor.localhost routed to same container
+      - traefik.http.routers.monitor.rule=Host(`monitor.${DOMAIN:-localhost}`) || Host(`monitor.test`)
+      - traefik.http.routers.monitor.entrypoints=web
+      - traefik.http.routers.monitor.service=monitor
+      - traefik.http.services.monitor.loadbalancer.server.port=80
+
+      - traefik.http.routers.myurgo.rule=Host(`myurgo.${DOMAIN:-localhost}`) || Host(`myurgo.test`)
+      - traefik.http.routers.myurgo.entrypoints=web
+      - traefik.http.routers.myurgo.service=myurgo
+      - traefik.http.services.myurgo.loadbalancer.server.port=80
+
+
+
 
   selenium:
     image: selenium/standalone-chrome:latest
@@ -23,40 +117,6 @@ services:
       - traefik.http.routers.selenium.rule=Host(`selenium.${DOMAIN:-localhost}`)
       - traefik.http.routers.selenium.entrypoints=web
       - traefik.http.services.selenium.loadbalancer.server.port=7900
-
-  traefik:
-    image: traefik:v3.1
-    container_name: traefik
-    command:
-      - --api.dashboard=true
-      - --api.insecure=true
-      - --providers.docker=true
-      - --providers.docker.exposedbydefault=false
-      - --entrypoints.web.address=:80
-      # Pour HTTPS local avec mkcert, décommentez ci-dessous et ajoutez certs:
-      # - --entrypoints.websecure.address=:443
-      # - --certificatesresolvers.dev.acme.tlschallenge=true
-      # - --certificatesresolvers.dev.acme.email=you@example.com
-      # - --certificatesresolvers.dev.acme.storage=/letsencrypt/acme.json
-    ports:
-      - "80:80"
-      # - "443:443"
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./letsencrypt:/letsencrypt
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.traefik.rule=Host(`traefik.${DOMAIN:-localhost}`)
-      - traefik.http.routers.traefik.entrypoints=web
-      - traefik.http.routers.traefik.service=api@internal
-      # - traefik.http.routers.traefik.tls=true
-      # - traefik.http.routers.traefik.tls.certresolver=dev
-    networks:
-      app-net:
-        aliases :
-          - web.test
-          - monitor.test
-          - myurgo.test
 
   filebeat:
     image: docker.elastic.co/beats/filebeat:7.17.26
@@ -89,6 +149,7 @@ services:
       - "host.docker.internal:host-gateway"
     ports:
       - "8080:80"
+      - "5173:5173"
     volumes:
       - ./src:/var/www/html
       - ./src/tmp/xdebug-traces:/var/www/html/tmp/xdebug-traces
@@ -117,10 +178,12 @@ services:
     labels:
       - traefik.enable=true
       - traefik.docker.network=app-net
-      - traefik.http.routers.web.rule=Host(`web.${DOMAIN:-localhost}`) || web(`monitor.test`)
+
+      - traefik.http.routers.web.rule=Host(`web.${DOMAIN:-localhost}`) || Host(`web.test`)
       - traefik.http.routers.web.entrypoints=web
       - traefik.http.routers.web.service=web
       - traefik.http.services.web.loadbalancer.server.port=80
+
       # - traefik.http.routers.web.tls=true
       # - traefik.http.routers.web.tls.certresolver=dev
       # Second site: monitor.localhost routed to same container
@@ -151,6 +214,7 @@ services:
       - traefik.http.services.mailhog.loadbalancer.server.port=8025
 
   netdata:
+    profiles: ["monitoring"]
     image: netdata/netdata:latest
     container_name: netdata
     cap_add:
@@ -180,7 +244,7 @@ services:
     image: mariadb:11
     container_name: db
     ports:
-      - "3306:3306"
+      - "0.0.0.0:3306:3306"
     restart: unless-stopped
     environment:
       MARIADB_ROOT_PASSWORD: rootpass
@@ -260,6 +324,7 @@ services:
       - traefik.http.services.apm.loadbalancer.server.port=8200
 
   portainer:
+    profiles: ["monitoring"]
     image: portainer/portainer-ce:latest
     container_name: portainer
     restart: unless-stopped
@@ -282,6 +347,7 @@ services:
       - traefik.http.services.portainer.loadbalancer.server.port=9000
 
   nocodb:
+    profiles: ["nocode"]
     image: nocodb/nocodb:latest
     container_name: nocodb
     restart: unless-stopped
