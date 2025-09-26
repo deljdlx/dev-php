@@ -17,7 +17,13 @@ class ExampleTest extends DuskTestCase
             $browser->visit('http://myurgo.test')
             ->pause(2000)
             ->screenshot('welcome-page')
-            ->assertSee('MyUrgo.fr');
+            ->assertSee('MyUrgo.fr')
+
+            // click on link "Connexion en tant qu'individu"
+            ->click('a.connexion-individu')
+            ->pause(5000)
+
+            ;
 
         });
     }

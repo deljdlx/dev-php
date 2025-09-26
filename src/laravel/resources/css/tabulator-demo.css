@@ -1,0 +1,115 @@
+:root{
+  --tbl-surface: #ffffff;
+  --tbl-surface-2: #f8fafc; /* light slate */
+  --tbl-border: rgba(0,0,0,0.08);
+  --tbl-border-strong: rgba(0,0,0,0.12);
+  --tbl-text: #0f172a;
+  --tbl-text-muted: #6b7280;
+  --tbl-accent: #4f46e5; /* indigo-600 */
+  --tbl-accent-50: #eef2ff;
+}
+
+@media (prefers-color-scheme: dark){
+  :root{
+    --tbl-surface: #0b1220;
+    --tbl-surface-2: #0f172a;
+    --tbl-border: rgba(255,255,255,0.1);
+    --tbl-border-strong: rgba(255,255,255,0.16);
+    --tbl-text: #e5e7eb;
+    --tbl-text-muted: #94a3b8;
+    --tbl-accent: #818cf8;
+    --tbl-accent-50: rgba(129,140,248,0.15);
+  }
+}
+
+/* Conteneur Tabulator */
+.tabulator{
+  background: var(--tbl-surface);
+  color: var(--tbl-text);
+  border: 1px solid var(--tbl-border);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+}
+
+/* En-tête */
+.tabulator .tabulator-header{
+  background: linear-gradient(180deg, var(--tbl-surface-2), var(--tbl-surface));
+  border-bottom: 1px solid var(--tbl-border);
+}
+
+.tabulator .tabulator-col{
+  font-weight: 600;
+  color: var(--tbl-text);
+  border-right: 1px solid var(--tbl-border);
+}
+
+.tabulator .tabulator-col:last-child{ border-right: none; }
+
+.tabulator .tabulator-col .tabulator-col-content{
+  padding: 10px 12px;
+}
+
+/* Icônes de tri */
+.tabulator .tabulator-col .tabulator-col-sorter{ opacity: .75; }
+.tabulator .tabulator-col.tabulator-sortable:hover{ background: var(--tbl-surface-2); }
+
+/* Filtres d'en-tête */
+.tabulator .tabulator-header .tabulator-col .tabulator-header-filter input,
+.tabulator .tabulator-header .tabulator-col .tabulator-header-filter select{
+  background: var(--tbl-surface);
+  color: var(--tbl-text);
+  border: 1px solid var(--tbl-border);
+  padding: 6px 8px;
+  border-radius: 8px;
+}
+
+/* Lignes & cellules */
+.tabulator .tabulator-tableholder{ background: var(--tbl-surface); }
+
+.tabulator .tabulator-row{
+  border-bottom: 1px solid var(--tbl-border);
+  transition: background-color .15s ease, box-shadow .15s ease;
+}
+
+.tabulator .tabulator-row:hover{
+  background: var(--tbl-surface-2);
+}
+
+.tabulator .tabulator-row.tabulator-selected{
+  background: var(--tbl-accent-50);
+  box-shadow: inset 3px 0 0 0 var(--tbl-accent);
+}
+
+.tabulator .tabulator-cell{
+  padding: 10px 12px;
+  border-right: 1px solid var(--tbl-border);
+}
+.tabulator .tabulator-cell:last-child{ border-right: none; }
+
+/* Formatters spécifiques */
+.tabulator .tabulator-cell .tabulator-star{ color: var(--tbl-accent); }
+
+/* Footer/pagination (si activé) */
+.tabulator .tabulator-footer{
+  background: var(--tbl-surface);
+  border-top: 1px solid var(--tbl-border);
+}
+
+/* Améliorations générales */
+.tabulator .tabulator-page{
+  background: transparent;
+  color: var(--tbl-text);
+  border: 1px solid var(--tbl-border);
+}
+.tabulator .tabulator-page.active{
+  background: var(--tbl-accent);
+  color: white;
+  border-color: var(--tbl-accent);
+}
+
+/* Support des checkboxes dans la colonne de sélection */
+.tabulator .tabulator-cell .tabulator-select-table input[type="checkbox"]{
+  width: 16px;
+  height: 16px;
+}
