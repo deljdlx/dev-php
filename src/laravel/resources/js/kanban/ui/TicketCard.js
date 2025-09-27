@@ -10,6 +10,7 @@ import { sanitizeTaxonomies, legacyToTaxonomies } from '../utils/taxonomies';
  */
 class TicketCard {
   /**
+   * @param {KanbanView} view
    * @param {Object} ticket
    * @param {string} ticket.id
    * @param {string} ticket.title
@@ -25,12 +26,91 @@ class TicketCard {
    * @param {(id: string, el: HTMLElement) => void} [opts.onRemove]
    * @param {Object<string, Set<string>>} [opts.allowedMap] Map of taxonomyKey -> Set of allowed option keys
    */
-  constructor(ticket, opts = {}) {
-   const tx = sanitizeTaxonomies(ticket?.taxonomies || legacyToTaxonomies(ticket || {}), opts.allowedMap);
-  this.ticket = { ...ticket, taxonomies: tx };
-    this.onClick = opts.onClick;
+
+
+  board = null;
+  popup = null;
+
+  constructor(board, ticket, opts = {}) {
+    this.board = board;
+    this.state = board.getState();
+    this.popup = board.popup;
+
+    const tx = sanitizeTaxonomies(ticket?.taxonomies || legacyToTaxonomies(ticket || {}), opts.allowedMap);
+    this.ticket = { ...ticket, taxonomies: tx };
+    // this.onClick = opts.onClick;
     this.onRemove = opts.onRemove;
   }
+
+
+  buildTaxoField(key, valKey) {
+    if (valKey == null || valKey === '') return '';
+
+    const meta = this.getTaxonomyMeta?.(key);
+    const optionLabel = meta?.options?.find?.(o => o.key === valKey)?.label ?? valKey;
+
+    if (key === 'label') {
+      return `<span class=\"label ${valKey}\">${escapeHtml(String(optionLabel))}</span>`;
+    }
+    if (key === 'category') {
+      return `<span class=\"category cat-${valKey}\">${escapeHtml(String(optionLabel))}</span>`;
+    }
+    if (key === 'complexity') {
+      return `<span class=\"complexity complexity-${String(valKey).toLowerCase()}\">${escapeHtml(String(optionLabel))}</span>`;
+    }
+    return `<span class=\"taxo-chip taxo-${escapeHtml(String(key))} taxo-${escapeHtml(String(key))}-${escapeHtml(String(valKey))}\">${escapeHtml(String(optionLabel))}</span>`;
+  }
+
+  getTaxonomyMeta(key) {
+    return this.board.getState().getTaxonomyMeta?.(key);
+  }
+
+
+
+  onClick(id, el, data) {
+
+
+    console.group('%cTicketCard.js :: 36 =============================', 'color: #612426; font-size: 1rem');
+    console.log('id', id);
+    console.groupEnd();
+
+    this.logger?.debug('ticket.click', { id });
+    this.popup.open({
+      title: data?.title || 'Ticket',
+      content: () => {
+        const wrap = document.createElement('div');
+        const tx = data?.taxonomies || {};
+        const txRows = Object.entries(tx).map(([k, v]) => {
+          const chip = this.buildTaxoField(k, v);
+          if (!chip) return '';
+          const label = escapeHtml(String(this.getTaxonomyMeta?.(k)?.label || k));
+          return `<div class=\"ticket-field ticket-taxo-${escapeHtml(String(k))}\"><span class=\"field-label\">${label}:</span><span class=\"field-value\">${chip}</span></div>`;
+        }).join('');
+        const authors = Array.isArray(this.state.board?.authors) ? this.state.board.authors : [];
+        const authorName = (data?.authorId ? (authors.find(a => a.id === data.authorId)?.name) : null) || data?.author || null;
+        wrap.innerHTML = `
+                <div class=\"ticket-details\">
+                    <div class=\"ticket-field ticket-author\">
+                        <span class=\"field-label\">Auteur:</span>
+                        <span class=\"field-value\">${authorName ? escapeHtml(String(authorName)) : '-'}</span>
+                    </div>
+                    ${txRows}
+                    <div class=\"ticket-field ticket-created\">
+                        <span class=\"field-label\">Créé le:</span>
+                        <span class=\"field-value\">${escapeHtml(new Date(data?.createdAt || Date.now()).toLocaleString())}</span>
+                    </div>
+                    ${data?.description ? `
+                        <div class=\"ticket-field ticket-description\">\n                                        <span class=\"field-label\">Description:</span>\n                                        <div class=\"field-value\">${escapeHtml(String(data.description))}</div>\n                                    </div>
+                    ` : ''}
+                </div>
+            `;
+        return wrap;
+      }
+    });
+  }
+
+
+
 
   /** Create and return the DOM element for the ticket card */
   render() {
@@ -70,13 +150,13 @@ class TicketCard {
       else chips.push(`<span class="taxo-chip taxo-${escapeHtml(key)} taxo-${escapeHtml(key)}-${escapeHtml(valKey)}">${escapeHtml(valKey)}</span>`);
     }
 
-  const descHtml = this.ticket.description ? `<div class="card-desc">${escapeHtml(this.ticket.description)}</div>` : '';
+    const descHtml = this.ticket.description ? `<div class="card-desc">${escapeHtml(this.ticket.description)}</div>` : '';
 
-  // author rendering: prefer entity name via authorId, fallback to legacy author string
-  const authors = Array.isArray(this?.opts?.authors) ? this.opts.authors : (Array.isArray(window.__kanbanAuthors) ? window.__kanbanAuthors : []);
-  const authorName = (this.ticket.authorId ? (authors.find(a => a.id === this.ticket.authorId)?.name) : null) || this.ticket.author || null;
+    // author rendering: prefer entity name via authorId, fallback to legacy author string
+    const authors = Array.isArray(this?.opts?.authors) ? this.opts.authors : (Array.isArray(window.__kanbanAuthors) ? window.__kanbanAuthors : []);
+    const authorName = (this.ticket.authorId ? (authors.find(a => a.id === this.ticket.authorId)?.name) : null) || this.ticket.author || null;
 
-  el.innerHTML = `
+    el.innerHTML = `
       <div class="card-title">${escapeHtml(this.ticket.title)}</div>
       ${descHtml}
       <div class="card-meta">
@@ -86,7 +166,7 @@ class TicketCard {
       </div>
     `;
 
-  el.addEventListener('click', () => this.onClick?.(this.ticket.id, el, this.ticket));
+    el.addEventListener('click', () => this.onClick?.(this.ticket.id, el, this.ticket));
 
     return el;
   }
