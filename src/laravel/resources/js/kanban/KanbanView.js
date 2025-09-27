@@ -4,6 +4,8 @@ import Popup from './ui/Popup';
 import escapeHtml from './utils/escapeHtml';
 import openCreateTicketPopup from './ui/createTicket';
 
+import { KanbanState } from './models/KanbanState';
+
 export class KanbanView {
   constructor(root, state, logger = null) {
     this.root = root;
@@ -16,7 +18,7 @@ export class KanbanView {
 
 
   /**
-   * @return {import('./models/KanbanState')}
+   * @return {KanbanState}
    */
   getState() {
     return this.state;

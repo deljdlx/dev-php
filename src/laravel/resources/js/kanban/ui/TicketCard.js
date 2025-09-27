@@ -2,6 +2,9 @@ import formatTicketDate from '../utils/formatDate';
 import escapeHtml from '../utils/escapeHtml';
 import { sanitizeTaxonomies, legacyToTaxonomies } from '../utils/taxonomies';
 
+import { KanbanView } from '../KanbanView';
+import { KanbanState } from '../models/KanbanState';
+
 /**
  * TicketCard: agnostic UI component for rendering a ticket card element.
  * - No state or datasource dependency
@@ -10,7 +13,7 @@ import { sanitizeTaxonomies, legacyToTaxonomies } from '../utils/taxonomies';
  */
 class TicketCard {
   /**
-   * @param {KanbanView} view
+   * @param {KanbanView} board
    * @param {Object} ticket
    * @param {string} ticket.id
    * @param {string} ticket.title
@@ -28,17 +31,24 @@ class TicketCard {
    */
 
 
+  /**
+   * @type  {KanbanView}
+   */
   board = null;
-  popup = null;
+
+  /**
+   * @type {KanbanState}
+   */
+  state = null;
 
   constructor(board, ticket, opts = {}) {
     this.board = board;
     this.state = board.getState();
     this.popup = board.popup;
 
+
     const tx = sanitizeTaxonomies(ticket?.taxonomies || legacyToTaxonomies(ticket || {}), opts.allowedMap);
     this.ticket = { ...ticket, taxonomies: tx };
-    // this.onClick = opts.onClick;
     this.onRemove = opts.onRemove;
   }
 
