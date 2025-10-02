@@ -235,6 +235,11 @@ EXPOSE 80
 COPY start.sh /usr/local/bin/start.sh
 RUN chmod +x /usr/local/bin/start.sh
 
+# Xdebug toggle helper
+COPY xdebug-on.sh /usr/local/bin/xdebug-on
+RUN chmod +x /usr/local/bin/xdebug-on \
+ && ln -sf /usr/local/bin/xdebug-on /usr/local/bin/xdebug-on.sh
+
 USER root
 
 # copy xdebug toggle scripts
