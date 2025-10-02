@@ -96,6 +96,28 @@ err()  { _log ERROR "$*"; }
 info() { _log INFO "$*"; }
 debug(){ _log DEBUG "$*"; }
 
+# --- Visual helpers for big sections ---
+term_width() { command -v tput >/dev/null 2>&1 && tput cols || echo 80; }
+hr() {
+    local ch width line
+    ch=${1:-"─"}
+    width=$(term_width)
+    line=$(printf "%${width}s" "" | tr ' ' "$ch")
+    printf "%b%b%s%b\n" "$CLR_BOLD" "$CLR_BLUE" "$line" "$CLR_RESET"
+}
+section() {
+    local title emoji
+    title="$1"; emoji="${2:-}";
+    echo
+    hr
+    if [ -n "$emoji" ]; then
+        printf "%b%s %s%b\n" "$CLR_BOLD" "$emoji" "$title" "$CLR_RESET"
+    else
+        bold "$title"
+    fi
+    hr
+}
+
 command_exists() { command -v "$1" >/dev/null 2>&1; }
 
 # Read a meminfo field value in kB
@@ -105,7 +127,7 @@ meminfo_kb() {
 }
 
 check_ram() {
-    bold "Préflight: vérification de la mémoire RAM"
+    info "Vérification de la mémoire RAM"
     if [ ! -r /proc/meminfo ]; then
         warn "/proc/meminfo non accessible; impossible d'évaluer la RAM."
         return 0
@@ -184,7 +206,7 @@ load_env() {
 }
 
 check_docker() {
-    bold "Préflight: vérification de l'environnement Docker"
+    info "Vérification de l'environnement Docker"
     if ! command_exists docker; then
         err "Docker n'est pas installé ou introuvable dans le PATH."
         exit 1
@@ -233,7 +255,7 @@ port_in_use() {
 }
 
 check_ports() {
-    bold "Préflight: vérification des ports d'écoute sur l'hôte"
+    section "Vérification des ports d'écoute sur l'hôte" "🧩"
     local -a PORTS=(
         "${TRAEFIK_HTTP_PORT:-80}"
         "${WEB_HTTP_PORT:-8080}"
@@ -286,6 +308,7 @@ check_ports() {
 }
 
 preflight() {
+    section "Préflight système" "🔎"
     ensure_env
     load_env
     check_docker
@@ -330,7 +353,7 @@ stop_running_services() {
 
 # Main runtime preflight orchestrator
 runtime_preflight() {
-    bold "Runtime preflight: état des services du projet"
+    section "Runtime preflight — état des services du projet" "🚦"
     local running
     running=$(get_running_services || true)
     if [ -n "$running" ]; then
@@ -362,7 +385,7 @@ available_profiles() {
 choose_and_launch() {
     local DEFAULT_PROFILES="proxy dev"
     echo
-    bold "Sélection des profils à lancer"
+    section "Sélection des profils & lancement" "🚀"
     local AVAIL
     AVAIL=$(available_profiles || true)
     if [ -n "$AVAIL" ]; then
