@@ -167,12 +167,29 @@ check_ports() {
         fi
     done
     if [ ${#CONFLICTS[@]} -gt 0 ]; then
-        warn "Ports déjà utilisés: ${CONFLICTS[*]}"
-        read -r -p "Continuer malgré tout ? [y/N] " RESP
-        if [[ ! "${RESP:-N}" =~ ^[Yy]$ ]]; then
-            err "Arrêt suite aux conflits de ports. Modifiez votre .env puis relancez."
-            exit 1
-        fi
+                warn "Ports déjà utilisés: ${CONFLICTS[*]}"
+                echo "Options:"
+                echo "  [K] Kill & relancer la stack docker compose du projet"
+                echo "  [C] Continuer malgré tout (risque d'échec au lancement)"
+                echo "  [S] Stopper (défaut)"
+                read -r -p "Votre choix [k/C/s]: " ACTION
+                ACTION=${ACTION:-s}
+                case "${ACTION,,}" in
+                    k)
+                        echo "Arrêt de la stack du projet..."
+                        docker compose down --remove-orphans || true
+                        ok "Stack arrêtée. Relance..."
+                        choose_and_launch
+                        exit 0
+                        ;;
+                    c)
+                        warn "Poursuite malgré les conflits de ports."
+                        ;;
+                    *)
+                        err "Arrêt suite aux conflits de ports. Modifiez votre .env ou libérez les ports, puis relancez."
+                        exit 1
+                        ;;
+                esac
     else
         ok "Aucun conflit de ports détecté."
     fi
@@ -183,31 +200,68 @@ preflight() {
     load_env
     check_docker
     check_ram
-    check_ports
     ok "Préflight terminé."
-    runtime_preflight() {
-        bold "Runtime preflight: état des services du projet"
-        local ps_out running
-        ps_out=$(docker compose ps 2>/dev/null || true)
-        running=$(printf "%s\n" "$ps_out" | awk 'NR>1 && $0 ~ /\bUp\b/ {print $1}')
 
-        if [ -n "$running" ]; then
-            echo "Des services sont déjà en cours d'exécution:"
-            echo "$ps_out"
-            read -r -p "Voulez-vous les arrêter avant de (re)lancer avec les profils choisis ? [Y/n] " ans
-            ans=${ans:-Y}
-            if [[ "$ans" =~ ^[Yy]$ ]]; then
-                echo "Arrêt des services en cours..."
-                docker compose down --remove-orphans
-                ok "Services arrêtés."
-            else
-                warn "Conservation des services en cours. Le lancement peut conserver/mettre à jour l'existant."
-            fi
+}
+
+# ---- Runtime preflight helpers ----
+# Return full `docker compose ps` output (or empty on error)
+compose_ps() {
+    docker compose ps 2>/dev/null || true
+}
+
+# Echo names of services that are currently Up (running)
+get_running_services() {
+    compose_ps | awk 'NR>1 && $0 ~ /\bUp\b/ {print $1}'
+}
+
+# Pretty print current compose process table
+print_services_status() {
+    local ps_out
+    ps_out=$(compose_ps)
+    if [ -n "$ps_out" ]; then
+        echo "$ps_out"
+    else
+        echo "(aucune sortie)"
+    fi
+}
+
+# Ask user whether to stop running services; returns 0 if yes, 1 otherwise
+prompt_stop_running() {
+    read -r -p "Voulez-vous arrêter les services en cours avant relance ? [Y/n] " ans
+    ans=${ans:-Y}
+    [[ "$ans" =~ ^[Yy]$ ]]
+}
+
+# Stop current compose services
+stop_running_services() {
+    docker compose down --remove-orphans
+}
+
+# Main runtime preflight orchestrator
+runtime_preflight() {
+    bold "Runtime preflight: état des services du projet"
+    local running
+    running=$(get_running_services || true)
+    if [ -n "$running" ]; then
+        echo "Des services sont déjà en cours d'exécution:"
+        print_services_status
+        if prompt_stop_running; then
+            echo "Arrêt des services en cours..."
+            stop_running_services
+            ok "Services arrêtés."
         else
-            ok "Aucun service du projet n'est en cours d'exécution."
+            warn "Conservation des services en cours. Le lancement peut conserver/mettre à jour l'existant."
+            read -r -p "Souhaitez-vous continuer malgré tout ? [y/N] " cont
+            cont=${cont:-N}
+            if [[ ! "$cont" =~ ^[Yy]$ ]]; then
+                err "Arrêt demandé par l'utilisateur."
+                exit 1
+            fi
         fi
-    }
-
+    else
+        ok "Aucun service du projet n'est en cours d'exécution."
+    fi
 }
 # Prompt user to choose profiles and launch
 available_profiles() {
@@ -242,8 +296,9 @@ choose_and_launch() {
     docker compose "${compose_args[@]}" up -d
 }
 
-# Run preflight then prompt profiles and start
+# Run preflight, then runtime preflight, then ports check, then prompt profiles and start
 preflight
 runtime_preflight
+check_ports
 choose_and_launch
 exit 0
