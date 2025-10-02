@@ -8,6 +8,59 @@ err() { printf "[ERROR] %s\n" "$*"; }
 
 command_exists() { command -v "$1" >/dev/null 2>&1; }
 
+# Read a meminfo field value in kB
+meminfo_kb() {
+    local KEY=$1
+    awk -v k="$KEY" '$1==k":" {print $2; found=1} END{ if(!found) print 0 }' /proc/meminfo 2>/dev/null || echo 0
+}
+
+check_ram() {
+    bold "Préflight: vérification de la mémoire RAM"
+    if [ ! -r /proc/meminfo ]; then
+        warn "/proc/meminfo non accessible; impossible d'évaluer la RAM."
+        return 0
+    fi
+
+    local total_kb avail_kb total_mb avail_mb
+    total_kb=$(meminfo_kb MemTotal)
+    avail_kb=$(meminfo_kb MemAvailable)
+
+    # Fallback si MemAvailable indisponible
+    if [ "${avail_kb:-0}" -eq 0 ]; then
+        local free_kb buff_kb cached_kb
+        free_kb=$(meminfo_kb MemFree)
+        buff_kb=$(meminfo_kb Buffers)
+        cached_kb=$(meminfo_kb Cached)
+        avail_kb=$(( free_kb + buff_kb + cached_kb ))
+    fi
+
+    total_mb=$(( total_kb / 1024 ))
+    avail_mb=$(( avail_kb / 1024 ))
+
+    # Seuils (indicatifs pour ES/Kibana + stack):
+    # - Total recommandé: >= 4096 MB
+    # - Disponible recommandé avant lancement: >= 1536 MB
+    local min_total_mb=4096
+    local min_avail_mb=1536
+
+    # Formatage en Go avec 1 décimale via awk (évite dépendance à bc)
+    local total_g avail_g
+    total_g=$(awk -v m="$total_mb" 'BEGIN{printf "%.1f", m/1024}')
+    avail_g=$(awk -v m="$avail_mb" 'BEGIN{printf "%.1f", m/1024}')
+
+    if [ "$total_mb" -lt "$min_total_mb" ]; then
+        warn "RAM totale: ${total_g}G (< 4.0G recommandé). La stack peut être lente/instable."
+    else
+        ok "RAM totale: ${total_g}G"
+    fi
+
+    if [ "$avail_mb" -lt "$min_avail_mb" ]; then
+        warn "RAM disponible: ${avail_g}G (< 1.5G). Fermez des applications ou ajustez la config avant 'docker compose up'."
+    else
+        ok "RAM disponible: ${avail_g}G"
+    fi
+}
+
 # Ensure .env exists or offer to create it from .env.example (single source of truth)
 ensure_env() {
     if [ ! -f ./.env ]; then
@@ -129,11 +182,44 @@ preflight() {
     ensure_env
     load_env
     check_docker
+    check_ram
     check_ports
     ok "Préflight terminé."
 }
+# Prompt user to choose profiles and launch
+available_profiles() {
+    # Static list aligned with docker-compose.yml
+    echo "proxy dev testing observability monitoring tools nocode"
+}
 
-# Run preflight checks only
+choose_and_launch() {
+    local DEFAULT_PROFILES="proxy dev"
+    echo
+    bold "Sélection des profils à lancer"
+    local AVAIL
+    AVAIL=$(available_profiles || true)
+    if [ -n "$AVAIL" ]; then
+        echo "Profils disponibles détectés: $AVAIL"
+    else
+        echo "Aucun profil détecté automatiquement (ou parsing limité). Vous pouvez tout de même saisir des profils connus."
+    fi
+    read -r -p "Profils à activer (séparés par des espaces) [${DEFAULT_PROFILES}] : " REPLY
+    local SELECTED
+    SELECTED=${REPLY:-$DEFAULT_PROFILES}
+
+    echo "Profils retenus: $SELECTED"
+
+    # Build compose args
+    local -a compose_args=()
+    for p in $SELECTED; do
+        compose_args+=(--profile "$p")
+    done
+
+    echo "Lancement: docker compose ${compose_args[*]} up -d"
+    docker compose "${compose_args[@]}" up -d
+}
+
+# Run preflight then prompt profiles and start
 preflight
-echo "[launch.sh] Préflight terminé (aucune action de déploiement exécutée)."
+choose_and_launch
 exit 0
