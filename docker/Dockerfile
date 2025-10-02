@@ -240,6 +240,10 @@ COPY xdebug-on.sh /usr/local/bin/xdebug-on
 RUN chmod +x /usr/local/bin/xdebug-on \
  && ln -sf /usr/local/bin/xdebug-on /usr/local/bin/xdebug-on.sh
 
+COPY xdebug-off.sh /usr/local/bin/xdebug-off
+RUN chmod +x /usr/local/bin/xdebug-off \
+ && ln -sf /usr/local/bin/xdebug-off /usr/local/bin/xdebug-off.sh
+
 USER root
 
 # copy xdebug toggle scripts
