@@ -135,29 +135,31 @@ RUN groupmod -o -g ${HOST_GID} www-data \
 # ===================================================
 COPY --from=composer_stage /usr/bin/composer /usr/bin/composer
 
-# ===================================================
-# Developer tooling: install PHP_CodeSniffer globally
-# - Install into /root/.composer so it's not masked by the runtime volume mounted on /tmp/composer
-# - Expose phpcs/phpcbf via /usr/local/bin
-# ===================================================
-RUN COMPOSER_HOME=/root/.composer composer global require --no-interaction --prefer-dist squizlabs/php_codesniffer \
- && ln -s /root/.composer/vendor/bin/phpcs /usr/local/bin/phpcs \
- && ln -s /root/.composer/vendor/bin/phpcbf /usr/local/bin/phpcbf
+# Developer tooling via PHARs is installed below; skipping composer-global installs to keep image lean.
 
 # ===================================================
-# Install phpstan globally
+# Install tools via Composer projects in /opt/tools (accessible to all users)
 # ===================================================
-RUN COMPOSER_HOME=/root/.composer composer global require --no-interaction --prefer-dist phpstan/phpstan \
- && ln -s /root/.composer/vendor/bin/phpstan /usr/local/bin/phpstan
+RUN set -eux; \
+    mkdir -p /opt/tools/phpstan /opt/tools/rector /opt/tools/phpcs; \
+    cd /opt/tools/phpstan; \
+    COMPOSER_HOME=/root/.composer composer require --no-interaction --prefer-dist phpstan/phpstan; \
+    ln -sf /opt/tools/phpstan/vendor/bin/phpstan /usr/local/bin/phpstan; \
+    cd /opt/tools/rector; \
+    COMPOSER_HOME=/root/.composer composer require --no-interaction --prefer-dist rector/rector; \
+    ln -sf /opt/tools/rector/vendor/bin/rector /usr/local/bin/rector; \
+    cd /opt/tools/phpcs; \
+    COMPOSER_HOME=/root/.composer composer require --no-interaction --prefer-dist squizlabs/php_codesniffer; \
+    ln -sf /opt/tools/phpcs/vendor/bin/phpcs /usr/local/bin/phpcs; \
+    ln -sf /opt/tools/phpcs/vendor/bin/phpcbf /usr/local/bin/phpcbf; \
+    mkdir -p /opt/tools/phpunit /opt/tools/phpmetrics; \
+    cd /opt/tools/phpunit; \
+    COMPOSER_HOME=/root/.composer composer require --no-interaction --prefer-dist phpunit/phpunit; \
+    ln -sf /opt/tools/phpunit/vendor/bin/phpunit /usr/local/bin/phpunit; \
+    cd /opt/tools/phpmetrics; \
+    COMPOSER_HOME=/root/.composer composer require --no-interaction --prefer-dist phpmetrics/phpmetrics; \
+    ln -sf /opt/tools/phpmetrics/vendor/bin/phpmetrics /usr/local/bin/phpmetrics
 
-# ===================================================
-# Install rector globally
-# ===================================================
-RUN COMPOSER_HOME=/root/.composer composer global require --no-interaction --prefer-dist rector/rector \
- && ln -s /root/.composer/vendor/bin/rector /usr/local/bin/rector
-
- COPY php/rector/php5.4.php /root/.composer/vendor/rector/config/php5.4.php
- COPY php/rector/php7.3.php /root/.composer/vendor/rector/config/php7.3.php
 
  # ===================================================
 # PHP Configuration
