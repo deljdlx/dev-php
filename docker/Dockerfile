@@ -36,7 +36,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN update-alternatives --set php /usr/bin/php8.4
 RUN a2enmod proxy proxy_fcgi setenvif rewrite headers expires
 
-RUN apt-get install -y \
+RUN apt-get update && apt-get install -y \
     git \
     unzip \
     zip \
@@ -46,7 +46,8 @@ RUN apt-get install -y \
     wget \
     curl \
     jq \
-    sudo
+    sudo \
+ && rm -rf /var/lib/apt/lists/*
 
 # ===================================================
 # Network & debugging tools (essentials + QoL)
