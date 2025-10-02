@@ -165,15 +165,15 @@ RUN set -eux; \
 # PHP Configuration
 # ===================================================
 COPY php/php-dev.ini /etc/php/8.4/fpm/conf.d/99-dev.ini
-COPY php/xdebug.ini /etc/php/8.4/fpm/conf.d/99-xdebug.ini
+COPY php/xdebug.ini /etc/php/8.4/fpm/conf.d/99-xdebug.ini.disabled
 # COPY php/php-dev.ini /etc/php/8.4/cli/conf.d/99-dev.ini
 
 COPY php/php-dev.ini /etc/php/8.3/fpm/conf.d/99-dev.ini
-COPY php/xdebug.ini /etc/php/8.3/fpm/conf.d/99-xdebug.ini
+COPY php/xdebug.ini /etc/php/8.3/fpm/conf.d/99-xdebug.ini.disabled
 # COPY php/php-dev.ini /etc/php/8.3/cli/conf.d/99-dev.ini
 
 COPY php/php-dev.ini /etc/php/7.4/fpm/conf.d/99-dev.ini
-COPY php/xdebug.ini /etc/php/7.4/fpm/conf.d/99-xdebug.ini
+COPY php/xdebug.ini /etc/php/7.4/fpm/conf.d/99-xdebug.ini.disabled
 COPY php/php-dev.ini /etc/php/7.4/cli/conf.d/99-dev.ini
 
 COPY php/opcache.ini /etc/php/8.4/fpm/conf.d/99-opcache.ini
@@ -236,6 +236,11 @@ COPY start.sh /usr/local/bin/start.sh
 RUN chmod +x /usr/local/bin/start.sh
 
 USER root
+
+# copy xdebug toggle scripts
+COPY xdebug-on.sh /usr/local/bin/xdebug-on.sh
+COPY xdebug-off.sh /usr/local/bin/xdebug-off.sh
+RUN chmod +x /usr/local/bin/xdebug-on.sh /usr/local/bin/xdebug-off.sh
 
 
 CMD ["/usr/local/bin/start.sh"]
