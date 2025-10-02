@@ -1,10 +1,100 @@
 #!/bin/bash
 set -euo pipefail
 
-bold() { printf "\033[1m%s\033[0m\n" "$*"; }
-ok() { printf "[OK] %s\n" "$*"; }
-warn() { printf "[WARN] %s\n" "$*"; }
-err() { printf "[ERROR] %s\n" "$*"; }
+# --- Logging with levels, colors, and emojis ---
+# Configure with env:
+#   LOG_LEVEL=DEBUG|INFO|NOTICE|WARN|ERROR (default INFO)
+#   NO_COLOR=1 to disable ANSI colors
+#   NO_EMOJI=1 to disable emojis
+LOG_LEVEL=${LOG_LEVEL:-INFO}
+
+_supports_color() {
+    [[ -t 1 ]] && [[ -z "${NO_COLOR:-}" ]]
+}
+
+# ANSI colors (only if supported)
+if _supports_color; then
+    CLR_RESET='\033[0m'
+    CLR_BOLD='\033[1m'
+    CLR_RED='\033[31m'
+    CLR_GREEN='\033[32m'
+    CLR_YELLOW='\033[33m'
+    CLR_BLUE='\033[34m'
+    CLR_CYAN='\033[36m'
+else
+    CLR_RESET=''
+    CLR_BOLD=''
+    CLR_RED=''
+    CLR_GREEN=''
+    CLR_YELLOW=''
+    CLR_BLUE=''
+    CLR_CYAN=''
+fi
+
+# Emojis (optional)
+if [[ -n "${NO_EMOJI:-}" ]]; then
+    EMOJI_OK="[OK]"
+    EMOJI_INFO="[INFO]"
+    EMOJI_NOTICE="[NOTICE]"
+    EMOJI_WARN="[WARN]"
+    EMOJI_ERR="[ERROR]"
+    EMOJI_DBG="[DBG]"
+else
+    EMOJI_OK="✅"
+    EMOJI_INFO="ℹ️ "
+    EMOJI_NOTICE="📣"
+    EMOJI_WARN="⚠️ "
+    EMOJI_ERR="❌"
+    EMOJI_DBG="🛠️ "
+fi
+
+_level_to_num() {
+    case "${1^^}" in
+        DEBUG) echo 10 ;;
+        INFO) echo 20 ;;
+        NOTICE) echo 25 ;;
+        WARN|WARNING) echo 30 ;;
+        ERROR|ERR) echo 40 ;;
+        *) echo 20 ;;
+    esac
+}
+
+_should_log() {
+    local req lvl
+    req=$(_level_to_num "$LOG_LEVEL")
+    lvl=$(_level_to_num "$1")
+    # Log if message severity >= configured threshold
+    [[ "$lvl" -ge "$req" ]]
+}
+
+_log() {
+    local level msg color emoji stream
+    level=${1:-INFO}; shift || true
+    msg="$*"
+    stream=1
+    case "${level^^}" in
+        DEBUG)  color="$CLR_CYAN";   emoji="$EMOJI_DBG" ;;
+        INFO)   color="$CLR_BLUE";   emoji="$EMOJI_INFO" ;;
+        NOTICE) color="$CLR_BOLD";   emoji="$EMOJI_NOTICE" ;;
+        WARN|WARNING)  color="$CLR_YELLOW"; emoji="$EMOJI_WARN"; stream=1 ;;
+        ERROR|ERR)     color="$CLR_RED";    emoji="$EMOJI_ERR" ; stream=2 ;;
+        SUCCESS|OK)    color="$CLR_GREEN";  emoji="$EMOJI_OK" ;;
+        *)      color="$CLR_RESET";  emoji="" ;;
+    esac
+    _should_log "$level" || return 0
+    if [[ "$stream" -eq 2 ]]; then
+        printf "%b%s%b %s\n" "$color" "$emoji" "$CLR_RESET" "$msg" 1>&2
+    else
+        printf "%b%s%b %s\n" "$color" "$emoji" "$CLR_RESET" "$msg"
+    fi
+}
+
+bold() { printf "%b%s%b\n" "$CLR_BOLD" "$*" "$CLR_RESET"; }
+ok()   { _log SUCCESS "$*"; }
+warn() { _log WARN "$*"; }
+err()  { _log ERROR "$*"; }
+info() { _log INFO "$*"; }
+debug(){ _log DEBUG "$*"; }
 
 command_exists() { command -v "$1" >/dev/null 2>&1; }
 
