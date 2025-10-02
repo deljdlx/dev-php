@@ -412,7 +412,7 @@ choose_profiles_with_presets() {
     local DEFAULT_PROFILES="proxy dev"
     echo
     section "Choix d'un preset de profils" "🧰"
-    cat <<'MENU'
+    cat >&2 <<'MENU'
 1) Dev rapide           → proxy dev           (web, db, traefik, mailhog)
 2) Dev + Observability  → proxy dev observability (web, db, traefik, mailhog, es, kibana, apm, filebeat)
 3) Testing (Selenium)   → testing proxy       (web, db, selenium, traefik)
