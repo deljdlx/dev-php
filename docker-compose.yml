@@ -4,6 +4,7 @@ services:
     image: traefik:v3.1
     container_name: traefik
     restart: unless-stopped
+    profiles: ["proxy"]
     command:
       - --api.dashboard=true
       - --api.insecure=true
@@ -71,8 +72,6 @@ services:
     depends_on:
       db:
         condition: service_healthy
-      elasticsearch:
-        condition: service_healthy
     networks:
       - app-net
     labels:
@@ -105,6 +104,7 @@ services:
     container_name: selenium
     shm_size: 2g
     restart: unless-stopped
+    profiles: ["testing"]
     ports:
       - "${SELENIUM_WEBDRIVER_PORT:-4444}:4444"   # WebDriver endpoint
       - "${SELENIUM_UI_PORT:-7900}:7900"   # noVNC UI
@@ -129,6 +129,7 @@ services:
     # Copy config inside container to satisfy Filebeat's strict ownership check, then start
     command: ["/bin/sh","-c","cp /config/filebeat.yml /usr/share/filebeat/filebeat.yml && chown root:root /usr/share/filebeat/filebeat.yml && exec filebeat -e --strict.perms=false"]
     restart: unless-stopped
+    profiles: ["observability"]
     depends_on:
       elasticsearch:
         condition: service_healthy
@@ -149,6 +150,7 @@ services:
     image: mailhog/mailhog
     container_name: mailhog
     restart: unless-stopped
+    profiles: ["dev"]
     ports:
       - "${MAILHOG_SMTP_PORT:-1025}:1025"   # SMTP
       - "${MAILHOG_HTTP_PORT:-8025}:8025"   # UI Web
@@ -218,6 +220,7 @@ services:
     image: docker.elastic.co/elasticsearch/elasticsearch:7.17.26
     container_name: elasticsearch
     restart: unless-stopped
+    profiles: ["observability"]
     environment:
       - discovery.type=single-node
       - ES_JAVA_OPTS=-Xms512m -Xmx512m
@@ -251,6 +254,7 @@ services:
     image: docker.elastic.co/kibana/kibana:7.17.26
     container_name: kibana
     restart: unless-stopped
+    profiles: ["observability"]
     ports:
       - "${KIBANA_PORT:-5601}:5601"
     environment:
@@ -278,6 +282,7 @@ services:
     image: docker.elastic.co/apm/apm-server:7.17.26
     container_name: apm-server
     restart: unless-stopped
+    profiles: ["observability"]
     ports:
       - "${APM_PORT:-8200}:8200"
     depends_on:
@@ -360,6 +365,7 @@ services:
     image: tecnativa/docker-socket-proxy:latest
     container_name: docker-socket-proxy
     restart: unless-stopped
+    profiles: ["tools"]
     # Do NOT publish this port externally; other containers can reach it at http://docker-socket-proxy:2375
     # ports:
     #   - "127.0.0.1:2375:2375"  # Optional: only bind to localhost if you really need host access

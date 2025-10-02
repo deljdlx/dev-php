@@ -173,22 +173,127 @@ check_ram() {
     fi
 }
 
+# --- Contextual help ---
+show_help() {
+    local topic=${1:-}
+    echo
+    section "Aide — $topic" "🆘"
+    case "$topic" in
+        ports)
+            cat <<'HLP'
+Pourquoi ça bloque ?
+- Un ou plusieurs ports (par ex. 80, 1025, 8025, 5601, …) sont déjà utilisés par une autre application sur votre machine.
+- Deux services ne peuvent pas écouter le même port en même temps.
+
+Comment identifier le programme qui utilise un port ?
+- Linux (nécessite parfois sudo):
+  - ss : sudo ss -ltnp | grep ':80'
+  - lsof: sudo lsof -iTCP:80 -sTCP:LISTEN -n -P
+
+Que faire ensuite ?
+1) Libérer le port en arrêtant l'application qui l'occupe (ex: un ancien container, Apache/Nginx local, Mailhog, …).
+2) Ou bien changer le port dans le fichier .env (ex: TRAEFIK_HTTP_PORT=8088), puis relancer.
+3) Vous pouvez aussi continuer, mais le lancement échouera pour les services en conflit.
+
+Liens utiles:
+- Ports et réseau Docker: https://docs.docker.com/config/containers/container-networking/
+- Variables d'environnement et .env: https://docs.docker.com/compose/environment-variables/envvars/
+HLP
+            ;;
+        running_services)
+            cat <<'HLP'
+Pourquoi ça bloque ?
+- Des services de CE projet tournent déjà (docker compose ps). Relancer sans les arrêter peut créer des conflits ou garder un état ancien.
+
+Que faire ?
+1) Arrêter proprement les services du projet: docker compose down --remove-orphans
+2) Continuer sans arrêter est possible, mais vous pourriez garder l'état actuel (conteneurs/ports/volumes) et rencontrer des erreurs.
+
+Liens utiles:
+- docker compose ps: https://docs.docker.com/reference/cli/docker/compose/ps/
+- docker compose down: https://docs.docker.com/reference/cli/docker/compose/down/
+HLP
+            ;;
+        env_missing)
+            cat <<'HLP'
+Pourquoi ça bloque ?
+- Le fichier .env n'existe pas encore. Il contient vos ports, mots de passe, et options de la stack.
+
+Que faire ?
+1) Créer .env à partir de .env.example (recommandé). Vous pourrez ensuite ajuster les valeurs.
+2) Sinon, créez-le manuellement en vous inspirant de .env.example.
+
+Liens utiles:
+- .env et variables d'environnement: https://docs.docker.com/compose/environment-variables/envvars/
+HLP
+            ;;
+        docker_daemon)
+            cat <<'HLP'
+Pourquoi ça bloque ?
+- Le démon Docker ne répond pas. Sans lui, aucune commande docker ne peut fonctionner.
+
+Que faire ?
+1) Démarrer le service Docker (Linux): sudo systemctl start docker
+2) Vérifier l'accès sans sudo (groupe docker): https://docs.docker.com/engine/install/linux-postinstall/
+3) Réessayer: docker info
+
+Installer Docker:
+- Guide d'installation Linux: https://docs.docker.com/engine/install/
+HLP
+            ;;
+        compose_missing)
+            cat <<'HLP'
+Pourquoi ça bloque ?
+- Le plugin Docker Compose V2 n'est pas disponible (commande 'docker compose').
+
+Que faire ?
+1) Installer Docker Compose V2: https://docs.docker.com/compose/install/linux/
+2) Vérifier ensuite: docker compose version
+HLP
+            ;;
+        compose_invalid)
+            cat <<'HLP'
+Pourquoi ça bloque ?
+- Le fichier docker-compose.yml contient une erreur de syntaxe ou d'options.
+
+Que faire ?
+1) Valider et voir les erreurs: docker compose config
+2) Corriger la configuration à l'endroit pointé par l'erreur.
+
+Référence:
+- Spécification Compose: https://docs.docker.com/compose/compose-file/
+HLP
+            ;;
+        *)
+            echo "Aide non définie pour: $topic";
+            ;;
+    esac
+}
+
 # Ensure .env exists or offer to create it from .env.example (single source of truth)
 ensure_env() {
     if [ ! -f ./.env ]; then
         warn "Fichier .env introuvable à la racine du projet."
         if [ -f ./.env.example ]; then
-            read -r -p "Créer .env à partir de .env.example ? [Y/n] " REPLY
+            read -r -p "Créer .env à partir de .env.example ? [Y/n] (h pour aide) " REPLY
             REPLY=${REPLY:-Y}
-            if [[ "$REPLY" =~ ^[Yy]$ ]]; then
-                cp ./.env.example ./.env
-                ok ".env créé depuis .env.example."
-            else
-                err "Création de .env annulée. Veuillez créer .env (copie de .env.example) puis relancer."
-                exit 1
-            fi
+            case "${REPLY,,}" in
+                y|yes)
+                    cp ./.env.example ./.env
+                    ok ".env créé depuis .env.example."
+                    ;;
+                h|a|help)
+                    show_help env_missing
+                    ensure_env
+                    ;;
+                *)
+                    err "Création de .env annulée. Veuillez créer .env (copie de .env.example) puis relancer."
+                    exit 1
+                    ;;
+            esac
         else
             err "Aucun .env.example trouvé. Veuillez ajouter .env.example au dépôt, puis relancer."
+            show_help env_missing
             exit 1
         fi
     fi
@@ -209,22 +314,26 @@ check_docker() {
     info "Vérification de l'environnement Docker"
     if ! command_exists docker; then
         err "Docker n'est pas installé ou introuvable dans le PATH."
+        show_help docker_daemon
         exit 1
     fi
     if ! docker info >/dev/null 2>&1; then
         err "Docker daemon indisponible. Démarrez Docker puis réessayez."
+        show_help docker_daemon
         exit 1
     fi
     ok "Docker opérationnel."
 
     if ! docker compose version >/dev/null 2>&1; then
         err "Plugin Docker Compose V2 indisponible (commande 'docker compose')."
+        show_help compose_missing
         exit 1
     fi
     ok "Docker Compose V2 disponible."
 
     if ! docker compose config -q; then
         err "docker-compose.yml invalide. Corrigez la configuration."
+        show_help compose_invalid
         exit 1
     fi
     ok "docker-compose.yml valide."
@@ -279,29 +388,36 @@ check_ports() {
         fi
     done
     if [ ${#CONFLICTS[@]} -gt 0 ]; then
-                warn "Ports déjà utilisés: ${CONFLICTS[*]}"
-                echo "Options:"
-                echo "  [K] Kill & relancer la stack docker compose du projet"
-                echo "  [C] Continuer malgré tout (risque d'échec au lancement)"
-                echo "  [S] Stopper (défaut)"
-                read -r -p "Votre choix [k/C/s]: " ACTION
-                ACTION=${ACTION:-s}
-                case "${ACTION,,}" in
-                    k)
-                        echo "Arrêt de la stack du projet..."
-                        docker compose down --remove-orphans || true
-                        ok "Stack arrêtée. Relance..."
-                        choose_and_launch
-                        exit 0
-                        ;;
-                    c)
-                        warn "Poursuite malgré les conflits de ports."
-                        ;;
-                    *)
-                        err "Arrêt suite aux conflits de ports. Modifiez votre .env ou libérez les ports, puis relancez."
-                        exit 1
-                        ;;
-                esac
+        while true; do
+            warn "Ports déjà utilisés: ${CONFLICTS[*]}"
+            echo "Options:"
+            echo "  [K] Kill & relancer la stack docker compose du projet"
+            echo "  [C] Continuer malgré tout (risque d'échec au lancement)"
+            echo "  [S] Stopper (défaut)"
+            echo "  [H] Aide (que faire ?)"
+            read -r -p "Votre choix [k/C/s/h]: " ACTION
+            ACTION=${ACTION:-s}
+            case "${ACTION,,}" in
+                k)
+                    echo "Arrêt de la stack du projet..."
+                    docker compose down --remove-orphans || true
+                    ok "Stack arrêtée. Relance..."
+                    choose_and_launch
+                    exit 0
+                    ;;
+                c)
+                    warn "Poursuite malgré les conflits de ports."
+                    break
+                    ;;
+                h|a|help|\?)
+                    show_help ports
+                    ;;
+                *)
+                    err "Arrêt suite aux conflits de ports. Modifiez votre .env ou libérez les ports, puis relancez."
+                    exit 1
+                    ;;
+            esac
+        done
     else
         ok "Aucun conflit de ports détecté."
     fi
@@ -341,9 +457,16 @@ print_services_status() {
 
 # Ask user whether to stop running services; returns 0 if yes, 1 otherwise
 prompt_stop_running() {
-    read -r -p "Voulez-vous arrêter les services en cours avant relance ? [Y/n] " ans
-    ans=${ans:-Y}
-    [[ "$ans" =~ ^[Yy]$ ]]
+    while true; do
+        read -r -p "Voulez-vous arrêter les services en cours avant relance ? [Y/n] (h pour aide) " ans
+        ans=${ans:-Y}
+        case "${ans,,}" in
+            y|yes) return 0 ;;
+            n|no)  return 1 ;;
+            h|a|help|\?) show_help running_services ;;
+            *) echo "Réponse invalide. Tapez Y, n, ou h." ;;
+        esac
+    done
 }
 
 # Stop current compose services
@@ -365,12 +488,19 @@ runtime_preflight() {
             ok "Services arrêtés."
         else
             warn "Conservation des services en cours. Le lancement peut conserver/mettre à jour l'existant."
-            read -r -p "Souhaitez-vous continuer malgré tout ? [y/N] " cont
-            cont=${cont:-N}
-            if [[ ! "$cont" =~ ^[Yy]$ ]]; then
-                err "Arrêt demandé par l'utilisateur."
-                exit 1
-            fi
+            while true; do
+                read -r -p "Souhaitez-vous continuer malgré tout ? [y/N] (h pour aide) " cont
+                cont=${cont:-N}
+                case "${cont,,}" in
+                    y|yes) break ;;
+                    n|no)
+                        err "Arrêt demandé par l'utilisateur."
+                        exit 1
+                        ;;
+                    h|a|help|\?) show_help running_services ;;
+                    *) echo "Réponse invalide. Tapez y, N, ou h." ;;
+                esac
+            done
         fi
     else
         ok "Aucun service du projet n'est en cours d'exécution."
