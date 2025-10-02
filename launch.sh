@@ -15,4 +15,8 @@ fi
 cp ~/.ssh/id_rsa ./docker/id_rsa
 cp ~/.bashrc ./docker/.bashrc
 
+# Reset only the application logs volume (simple and safe for dev)
+echo "[launch.sh] Resetting app_logs volume contents..."
+docker compose run --rm --no-deps -u root web sh -lc 'rm -rf "${LOG_WEB_PATH:-/var/logs/web}"/* || true'
+
 docker compose build && docker compose up
