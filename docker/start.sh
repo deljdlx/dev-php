@@ -15,6 +15,11 @@ if command -v php-fpm8.4 >/dev/null 2>&1; then
   php-fpm8.4 -D
 fi
 
+if command -v php-fpm8.3 >/dev/null 2>&1; then
+  echo "[start.sh] Starting php-fpm8.3"
+  php-fpm8.3 -D
+fi
+
 
 chown -R www-data:www-data /var/logs/web
 
