@@ -185,6 +185,29 @@ preflight() {
     check_ram
     check_ports
     ok "Préflight terminé."
+    runtime_preflight() {
+        bold "Runtime preflight: état des services du projet"
+        local ps_out running
+        ps_out=$(docker compose ps 2>/dev/null || true)
+        running=$(printf "%s\n" "$ps_out" | awk 'NR>1 && $0 ~ /\bUp\b/ {print $1}')
+
+        if [ -n "$running" ]; then
+            echo "Des services sont déjà en cours d'exécution:"
+            echo "$ps_out"
+            read -r -p "Voulez-vous les arrêter avant de (re)lancer avec les profils choisis ? [Y/n] " ans
+            ans=${ans:-Y}
+            if [[ "$ans" =~ ^[Yy]$ ]]; then
+                echo "Arrêt des services en cours..."
+                docker compose down --remove-orphans
+                ok "Services arrêtés."
+            else
+                warn "Conservation des services en cours. Le lancement peut conserver/mettre à jour l'existant."
+            fi
+        else
+            ok "Aucun service du projet n'est en cours d'exécution."
+        fi
+    }
+
 }
 # Prompt user to choose profiles and launch
 available_profiles() {
@@ -221,5 +244,6 @@ choose_and_launch() {
 
 # Run preflight then prompt profiles and start
 preflight
+runtime_preflight
 choose_and_launch
 exit 0
