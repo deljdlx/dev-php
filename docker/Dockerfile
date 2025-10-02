@@ -19,20 +19,24 @@ RUN apt-get update && apt-get install -y \
     && echo "deb [signed-by=/usr/share/keyrings/sury.gpg] https://packages.sury.org/php/ $(lsb_release -sc) main" > /etc/apt/sources.list.d/sury.list \
     && apt-get update
 
-RUN apt-get install -y --no-install-recommends \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     apache2 \
     sqlite3 \
     php7.4-cli php7.4-common php7.4-fpm \
     php7.4-mysql php7.4-curl php7.4-xml php7.4-mbstring \
     php7.4-zip php7.4-gd php7.4-bcmath php7.4-imagick php7.4-xdebug php7.4-sqlite3 \
+    php8.3-cli php8.3-common php8.3-fpm \
+    php8.3-mysql php8.3-curl php8.3-xml php8.3-mbstring \
+    php8.3-zip php8.3-gd php8.3-bcmath php8.3-imagick php8.3-xdebug php8.3-intl php8.3-sqlite3 \
     php8.4-cli php8.4-common php8.4-fpm \
     php8.4-mysql php8.4-curl php8.4-xml php8.4-mbstring \
-    php8.4-zip php8.4-gd php8.4-bcmath php8.4-imagick php8.4-xdebug php8.4-intl php8.4-sqlite3
+    php8.4-zip php8.4-gd php8.4-bcmath php8.4-imagick php8.4-xdebug php8.4-intl php8.4-sqlite3 \
+ && rm -rf /var/lib/apt/lists/*
 
 RUN update-alternatives --set php /usr/bin/php8.4
 RUN a2enmod proxy proxy_fcgi setenvif rewrite headers expires
 
-RUN apt-get install -y \
+RUN apt-get update && apt-get install -y \
     git \
     unzip \
     zip \
@@ -41,7 +45,53 @@ RUN apt-get install -y \
     tree \
     wget \
     curl \
-    jq
+    jq \
+    sudo \
+ && rm -rf /var/lib/apt/lists/*
+
+# ===================================================
+# Network & debugging tools (essentials + QoL)
+# ===================================================
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    iproute2 \
+    net-tools \
+    iputils-ping \
+    dnsutils \
+    traceroute \
+    mtr-tiny \
+    netcat-openbsd \
+    tcpdump \
+    lsof \
+    procps \
+    psmisc \
+    rsync \
+    openssl \
+    less \
+    htop \
+    bash-completion \
+    ncdu \
+    socat \
+    httpie \
+    inotify-tools \
+ && rm -rf /var/lib/apt/lists/*
+
+# ===================================================
+# Donner les droits root à www-data (via sudo NOPASSWD)
+# ===================================================
+RUN echo "www-data ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/www-data \
+ && chmod 0440 /etc/sudoers.d/www-data \
+ && usermod -s /bin/bash www-data
+
+# Provide the same bash profile to root
+COPY .bashrc /root/.bashrc
+
+# Switch to www-data automatically for interactive root shells (docker exec -it)
+RUN cat >> /root/.bashrc <<'EOF'
+# Auto-switch to www-data for interactive shells
+if [ "$EUID" -eq 0 ] && [[ $- == *i* ]] && [ -t 0 ]; then
+    exec sudo -u www-data -H bash -l
+fi
+EOF
 
 # ===================================================
 # Elastic APM PHP agent
@@ -85,48 +135,58 @@ RUN groupmod -o -g ${HOST_GID} www-data \
 # ===================================================
 COPY --from=composer_stage /usr/bin/composer /usr/bin/composer
 
-# ===================================================
-# Developer tooling: install PHP_CodeSniffer globally
-# - Install into /root/.composer so it's not masked by the runtime volume mounted on /tmp/composer
-# - Expose phpcs/phpcbf via /usr/local/bin
-# ===================================================
-RUN COMPOSER_HOME=/root/.composer composer global require --no-interaction --prefer-dist squizlabs/php_codesniffer \
- && ln -s /root/.composer/vendor/bin/phpcs /usr/local/bin/phpcs \
- && ln -s /root/.composer/vendor/bin/phpcbf /usr/local/bin/phpcbf
+# Developer tooling via PHARs is installed below; skipping composer-global installs to keep image lean.
 
 # ===================================================
-# Install phpstan globally
+# Install tools via Composer projects in /opt/tools (accessible to all users)
 # ===================================================
-RUN COMPOSER_HOME=/root/.composer composer global require --no-interaction --prefer-dist phpstan/phpstan \
- && ln -s /root/.composer/vendor/bin/phpstan /usr/local/bin/phpstan
+RUN set -eux; \
+    mkdir -p /opt/tools/phpstan /opt/tools/rector /opt/tools/phpcs; \
+    cd /opt/tools/phpstan; \
+    COMPOSER_HOME=/root/.composer composer require --no-interaction --prefer-dist phpstan/phpstan; \
+    ln -sf /opt/tools/phpstan/vendor/bin/phpstan /usr/local/bin/phpstan; \
+    cd /opt/tools/rector; \
+    COMPOSER_HOME=/root/.composer composer require --no-interaction --prefer-dist rector/rector; \
+    ln -sf /opt/tools/rector/vendor/bin/rector /usr/local/bin/rector; \
+    cd /opt/tools/phpcs; \
+    COMPOSER_HOME=/root/.composer composer require --no-interaction --prefer-dist squizlabs/php_codesniffer; \
+    ln -sf /opt/tools/phpcs/vendor/bin/phpcs /usr/local/bin/phpcs; \
+    ln -sf /opt/tools/phpcs/vendor/bin/phpcbf /usr/local/bin/phpcbf; \
+    mkdir -p /opt/tools/phpunit /opt/tools/phpmetrics; \
+    cd /opt/tools/phpunit; \
+    COMPOSER_HOME=/root/.composer composer require --no-interaction --prefer-dist phpunit/phpunit; \
+    ln -sf /opt/tools/phpunit/vendor/bin/phpunit /usr/local/bin/phpunit; \
+    cd /opt/tools/phpmetrics; \
+    COMPOSER_HOME=/root/.composer composer require --no-interaction --prefer-dist phpmetrics/phpmetrics; \
+    ln -sf /opt/tools/phpmetrics/vendor/bin/phpmetrics /usr/local/bin/phpmetrics
 
-# ===================================================
-# Install rector globally
-# ===================================================
-RUN COMPOSER_HOME=/root/.composer composer global require --no-interaction --prefer-dist rector/rector \
- && ln -s /root/.composer/vendor/bin/rector /usr/local/bin/rector
-
- COPY php/rector/php5.4.php /root/.composer/vendor/rector/config/php5.4.php
- COPY php/rector/php7.3.php /root/.composer/vendor/rector/config/php7.3.php
 
  # ===================================================
 # PHP Configuration
 # ===================================================
 COPY php/php-dev.ini /etc/php/8.4/fpm/conf.d/99-dev.ini
-COPY php/xdebug.ini /etc/php/8.4/fpm/conf.d/99-xdebug.ini
+COPY php/xdebug.ini /etc/php/8.4/fpm/conf.d/99-xdebug.ini.disabled
 # COPY php/php-dev.ini /etc/php/8.4/cli/conf.d/99-dev.ini
 
+COPY php/php-dev.ini /etc/php/8.3/fpm/conf.d/99-dev.ini
+COPY php/xdebug.ini /etc/php/8.3/fpm/conf.d/99-xdebug.ini.disabled
+# COPY php/php-dev.ini /etc/php/8.3/cli/conf.d/99-dev.ini
+
 COPY php/php-dev.ini /etc/php/7.4/fpm/conf.d/99-dev.ini
-COPY php/xdebug.ini /etc/php/7.4/fpm/conf.d/99-xdebug.ini
+COPY php/xdebug.ini /etc/php/7.4/fpm/conf.d/99-xdebug.ini.disabled
 COPY php/php-dev.ini /etc/php/7.4/cli/conf.d/99-dev.ini
 
 COPY php/opcache.ini /etc/php/8.4/fpm/conf.d/99-opcache.ini
 COPY php/opcache.ini /etc/php/8.4/cli/conf.d/99-opcache.ini
+COPY php/opcache.ini /etc/php/8.3/fpm/conf.d/99-opcache.ini
+COPY php/opcache.ini /etc/php/8.3/cli/conf.d/99-opcache.ini
 COPY php/opcache.ini /etc/php/7.4/fpm/conf.d/99-opcache.ini
 COPY php/opcache.ini /etc/php/7.4/cli/conf.d/99-opcache.ini
 
 COPY php/elastic_apm.ini /etc/php/8.4/fpm/conf.d/98-elastic-apm.ini
 # COPY php/elastic_apm.ini /etc/php/8.4/cli/conf.d/98-elastic-apm.ini
+COPY php/elastic_apm.ini /etc/php/8.3/fpm/conf.d/98-elastic-apm.ini
+# COPY php/elastic_apm.ini /etc/php/8.3/cli/conf.d/98-elastic-apm.ini
 COPY php/elastic_apm.ini /etc/php/7.4/fpm/conf.d/98-elastic-apm.ini
 # COPY php/elastic_apm.ini /etc/php/7.4/cli/conf.d/98-elastic-apm.ini
 
@@ -150,13 +210,23 @@ RUN git config --global --add safe.directory /var/www/html
 # USER PROFILE
 # ===================================================
 
-COPY .bashrc /root/.bashrc
-RUN mkdir -p /root/.ssh && chmod 700 /root/.ssh
-COPY id_rsa /root/.ssh/id_rsa
-RUN chmod 600 /root/.ssh/id_rsa \
- && echo "    IdentityFile /root/.ssh/id_rsa" >> /etc/ssh/ssh_config \
- && echo "    StrictHostKeyChecking no" >> /etc/ssh/ssh_config
+# set user as www-data
+USER www-data
 
+# Create and configure SSH directory for www-data (do privileged ops as root)
+USER root
+RUN install -d -m 700 -o www-data -g www-data /var/www/.ssh
+COPY --chown=www-data:www-data id_rsa /var/www/.ssh/id_rsa
+RUN chmod 600 /var/www/.ssh/id_rsa \
+ && printf "Host *\n    IdentityFile /var/www/.ssh/id_rsa\n    StrictHostKeyChecking no\n" > /var/www/.ssh/config \
+ && chmod 600 /var/www/.ssh/config \
+ && chown www-data:www-data /var/www/.ssh/config
+
+# Copy developer bash profile for www-data and ensure it's loaded for login shells
+COPY --chown=www-data:www-data .bashrc /var/www/.bashrc
+RUN printf '# ~/.profile\nif [ -f "$HOME/.bashrc" ]; then\n  . "$HOME/.bashrc"\nfi\n' > /var/www/.profile \
+ && chown www-data:www-data /var/www/.profile \
+ && chmod 0644 /var/www/.profile
 
 WORKDIR /var/www/html
 EXPOSE 80
@@ -164,4 +234,22 @@ EXPOSE 80
 # Start script (launch both php-fpm daemons then Apache)
 COPY start.sh /usr/local/bin/start.sh
 RUN chmod +x /usr/local/bin/start.sh
+
+# Xdebug toggle helper
+COPY xdebug-on.sh /usr/local/bin/xdebug-on
+RUN chmod +x /usr/local/bin/xdebug-on \
+ && ln -sf /usr/local/bin/xdebug-on /usr/local/bin/xdebug-on.sh
+
+COPY xdebug-off.sh /usr/local/bin/xdebug-off
+RUN chmod +x /usr/local/bin/xdebug-off \
+ && ln -sf /usr/local/bin/xdebug-off /usr/local/bin/xdebug-off.sh
+
+USER root
+
+# copy xdebug toggle scripts
+COPY xdebug-on.sh /usr/local/bin/xdebug-on.sh
+COPY xdebug-off.sh /usr/local/bin/xdebug-off.sh
+RUN chmod +x /usr/local/bin/xdebug-on.sh /usr/local/bin/xdebug-off.sh
+
+
 CMD ["/usr/local/bin/start.sh"]
