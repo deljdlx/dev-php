@@ -2,8 +2,30 @@ import formatTicketDate from '../utils/formatDate';
 import escapeHtml from '../utils/escapeHtml';
 import { sanitizeTaxonomies, legacyToTaxonomies } from '../utils/taxonomies';
 
-import { KanbanView } from '../KanbanView';
-import { KanbanState } from '../models/KanbanState';
+/** @typedef {import('../KanbanView').KanbanView} KanbanView */
+/** @typedef {import('../models/KanbanState').default} KanbanState */
+
+/**
+ * @typedef {Object} Ticket
+ * @property {string} id
+ * @property {string} title
+ * @property {string|null} [description]
+ * @property {string|null} [author]
+ * @property {string|null} [authorId]
+ * @property {Record<string, string|null>} [taxonomies]
+ * @property {number} [createdAt]
+ * @property {string|null} [label]    legacy
+ * @property {string|null} [category] legacy
+ * @property {string|null} [complexity] legacy
+ */
+
+/**
+ * @typedef {Object} TicketCardOptions
+ * @property {(id: string, el: HTMLElement) => void} [onClick]
+ * @property {(id: string, el: HTMLElement) => void} [onRemove]
+ * @property {Object<string, Set<string>>} [allowedMap]
+ * @property {{ id: string, name: string }[]} [authors]
+ */
 
 /**
  * TicketCard: agnostic UI component for rendering a ticket card element.
@@ -41,6 +63,11 @@ class TicketCard {
    */
   state = null;
 
+  /**
+   * @param {KanbanView} board - la vue kanban parente (fournit l'état et les utilitaires)
+   * @param {Ticket} ticket - les données de la carte
+   * @param {TicketCardOptions} [opts] - callbacks et options UI
+   */
   constructor(board, ticket, opts = {}) {
     this.board = board;
     this.state = board.getState();
@@ -54,6 +81,12 @@ class TicketCard {
   }
 
 
+  /**
+   * Construit le HTML pour un chip de taxonomie (ex: label/category/complexity)
+   * @param {string} key
+   * @param {string|null|undefined} valKey
+   * @returns {string}
+   */
   buildTaxoField(key, valKey) {
     if (valKey == null || valKey === '') return '';
 
@@ -72,12 +105,22 @@ class TicketCard {
     return `<span class=\"taxo-chip taxo-${escapeHtml(String(key))} taxo-${escapeHtml(String(key))}-${escapeHtml(String(valKey))}\">${escapeHtml(String(optionLabel))}</span>`;
   }
 
+  /**
+   * @param {string} key
+   * @returns {{ label: string, options: Array<{key: string, label: string}> }|undefined}
+   */
   getTaxonomyMeta(key) {
     return this.board.getState().getTaxonomyMeta?.(key);
   }
 
 
 
+  /**
+   * Ouvre les détails du ticket dans une popup
+   * @param {string} id
+   * @param {HTMLElement} el
+   * @param {Ticket} data
+   */
   onClick(id, el, data) {
 
 

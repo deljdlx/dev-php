@@ -4,7 +4,7 @@ import Popup from './ui/Popup';
 import escapeHtml from './utils/escapeHtml';
 import openCreateTicketPopup from './ui/createTicket';
 
-import { KanbanState } from './models/KanbanState';
+/** @typedef {import('./models/KanbanState').default} KanbanState */
 
 export class KanbanView {
   constructor(root, state, logger = null) {
