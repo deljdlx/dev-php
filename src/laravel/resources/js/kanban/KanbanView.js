@@ -6,13 +6,27 @@ import openCreateTicketPopup from './ui/createTicket';
 
 /** @typedef {import('./models/KanbanState').default} KanbanState */
 
+/**
+ * KanbanView (Vue principale)
+ * - Affiche les colonnes et les cartes
+ * - Délègue la persistance et la logique métier à KanbanState
+ * - Reçoit un logger optionnel
+ */
 export class KanbanView {
-  constructor(root, state, logger = null) {
+  /**
+   * @param {HTMLElement} root
+   * @param {KanbanState} state
+   * @param {{ debug?: Function } | null} [logger]
+   * @param {{ modal?: { open: Function } }} [services]
+   */
+  constructor(root, state, logger = null, services = {}) {
     this.root = root;
     this.state = state;
     this.sortables = new Map();
     this.logger = logger;
     this.popup = new Popup();
+    // Injected services (DI): modal is optional; fallback remains this.popup for compatibility
+    this.services = { modal: services?.modal || null };
     this.render();
   }
 
@@ -107,6 +121,7 @@ export class KanbanView {
       ticket, {
       allowedMap: this.state.getAllowedMap?.(),
       authors: Array.isArray(this.state.board?.authors) ? this.state.board.authors : [],
+      modal: this.services.modal, // pass injected modal service to the card
       onClick: (id, el, data) => {
         this.onClick(id, el, data);
       },

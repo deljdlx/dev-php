@@ -9,27 +9,35 @@ import ThemeService from './services/ThemeService';
 import BackgroundService from './services/BackgroundService';
 import FilterService from './services/FilterService';
 import ImportService from './services/ImportService';
+import PopupModalAdapter from './ui/adapters/PopupModalAdapter';
 
 export default class KanbanApplication {
 	constructor(root = document.getElementById('kanban')) {
 		this.root = root;
+		// Logger service (can be swapped): see types/contracts.js for the Logger contract
 		this.logger = createLogger('Kanban');
+		// Storage (impl locale par défaut)
 		this.storage = createDefaultStorage();
+		// DataSource (repository): remplaçable par une impl API plus tard
 		this.dataSource = new DemoDataSource(demoFactory, 'demo.kanban.v6', this.logger, this.storage);
+		// Model (state) consomme DataSource via un contrat simple
 		this.state = new KanbanState(this.dataSource, { logger: this.logger });
 		this.view = null;
 
 		// Services
+		// Services UI facultatifs (thème, fond, filtres, import)
 		this.theme = new ThemeService(this.storage);
 		this.background = new BackgroundService(this.storage);
 		this.filters = null; // created after view
 		this.importer = null; // created after view
+		// Modal service (DI minimal): on commence avec l'adapter Popup
+		this.modal = new PopupModalAdapter();
 	}
 
 	async init() {
 		if (!this.root) return;
 		await this.state.load();
-		this.view = new KanbanView(this.root, this.state, this.logger);
+		this.view = new KanbanView(this.root, this.state, this.logger, { modal: this.modal });
 		this.renderTitle();
 
 		// Initialize services
@@ -69,7 +77,7 @@ export default class KanbanApplication {
 
 		// Rebuild the view and UI
 		this.view.dispose?.();
-		this.view = new KanbanView(this.root, this.state, this.logger);
+		this.view = new KanbanView(this.root, this.state, this.logger, { modal: this.modal });
 		this.renderTitle();
 		this.filters = new FilterService(this.state, this.storage, this.view, this.logger);
 		this.filters.init();

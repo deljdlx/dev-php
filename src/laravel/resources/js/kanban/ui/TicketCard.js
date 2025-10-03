@@ -1,6 +1,14 @@
+/**
+ * TicketCard (vue de carte) — guide débutant:
+ * - Cette classe affiche une carte et gère les clics/suppression via des callbacks.
+ * - Elle ne devrait pas connaître les détails du stockage.
+ * - Pour changer le système de popup, passe un service modal dans les options au lieu d'utiliser board.popup.
+ */
 import formatTicketDate from '../utils/formatDate';
 import escapeHtml from '../utils/escapeHtml';
 import { sanitizeTaxonomies, legacyToTaxonomies } from '../utils/taxonomies';
+import { renderTaxonomyChip } from './components/TaxonomyChip';
+import { buildTicketDetails } from './components/TicketDetails';
 
 /** @typedef {import('../KanbanView').KanbanView} KanbanView */
 /** @typedef {import('../models/KanbanState').default} KanbanState */
@@ -88,21 +96,7 @@ class TicketCard {
    * @returns {string}
    */
   buildTaxoField(key, valKey) {
-    if (valKey == null || valKey === '') return '';
-
-    const meta = this.getTaxonomyMeta?.(key);
-    const optionLabel = meta?.options?.find?.(o => o.key === valKey)?.label ?? valKey;
-
-    if (key === 'label') {
-      return `<span class=\"label ${valKey}\">${escapeHtml(String(optionLabel))}</span>`;
-    }
-    if (key === 'category') {
-      return `<span class=\"category cat-${valKey}\">${escapeHtml(String(optionLabel))}</span>`;
-    }
-    if (key === 'complexity') {
-      return `<span class=\"complexity complexity-${String(valKey).toLowerCase()}\">${escapeHtml(String(optionLabel))}</span>`;
-    }
-    return `<span class=\"taxo-chip taxo-${escapeHtml(String(key))} taxo-${escapeHtml(String(key))}-${escapeHtml(String(valKey))}\">${escapeHtml(String(optionLabel))}</span>`;
+    return renderTaxonomyChip(key, valKey, this.getTaxonomyMeta?.(key));
   }
 
   /**
@@ -129,54 +123,66 @@ class TicketCard {
     console.groupEnd();
 
     this.logger?.debug('ticket.click', { id });
+
+    const modal = this?.opts?.modal;
+    const buildContent = () => {
+      const authors = Array.isArray(this?.opts?.authors) ? this.opts.authors : (Array.isArray(this.state.board?.authors) ? this.state.board.authors : []);
+      const node = buildTicketDetails({ ticket: data, getTaxonomyMeta: (k) => this.getTaxonomyMeta(k), authors });
+      const actions = document.createElement('div');
+      actions.className = 'tf-actions';
+      actions.style.marginTop = '8px';
+      actions.innerHTML = '<button type="button" class="btn btn-danger" data-delete>Supprimer</button>';
+      node.appendChild(actions);
+      setTimeout(() => {
+        node.querySelector('[data-delete]')?.addEventListener('click', (e) => { e.stopPropagation(); this.openDeleteConfirm(el); });
+      });
+      return node;
+    };
+
+    if (modal && typeof modal.open === 'function') {
+      const handle = modal.open({ title: data?.title || 'Ticket', body: buildContent() });
+      this._lastModal = handle;
+      return;
+    }
+
     this.popup.open({
       title: data?.title || 'Ticket',
-      content: () => {
-        const wrap = document.createElement('div');
-        const tx = data?.taxonomies || {};
-        const txRows = Object.entries(tx).map(([k, v]) => {
-          const chip = this.buildTaxoField(k, v);
-          if (!chip) return '';
-          const label = escapeHtml(String(this.getTaxonomyMeta?.(k)?.label || k));
-          return `<div class=\"ticket-field ticket-taxo-${escapeHtml(String(k))}\"><span class=\"field-label\">${label}:</span><span class=\"field-value\">${chip}</span></div>`;
-        }).join('');
-        const authors = Array.isArray(this.state.board?.authors) ? this.state.board.authors : [];
-        const authorName = (data?.authorId ? (authors.find(a => a.id === data.authorId)?.name) : null) || data?.author || null;
-        wrap.innerHTML = `
-                <div class=\"ticket-details\">
-                    <div class=\"ticket-field ticket-author\">
-                        <span class=\"field-label\">Auteur:</span>
-                        <span class=\"field-value\">${authorName ? escapeHtml(String(authorName)) : '-'}</span>
-                    </div>
-                    ${txRows}
-                    <div class=\"ticket-field ticket-created\">
-                        <span class=\"field-label\">Créé le:</span>
-                        <span class=\"field-value\">${escapeHtml(new Date(data?.createdAt || Date.now()).toLocaleString())}</span>
-                    </div>
-                    ${data?.description ? `
-                        <div class=\"ticket-field ticket-description\">\n                                        <span class=\"field-label\">Description:</span>\n                                        <div class=\"field-value\">${escapeHtml(String(data.description))}</div>\n                                    </div>
-                    ` : ''}
-                </div>
-                <div class=\"tf-actions\" style=\"margin-top: 8px;\">
-                  <button type=\"button\" class=\"btn btn-danger\" data-delete>Supprimer</button>
-                </div>
-            `;
-        setTimeout(() => {
-          const del = wrap.querySelector('[data-delete]');
-          del?.addEventListener('click', (e) => {
-            e.stopPropagation();
-            this.openDeleteConfirm(el);
-          });
-        });
-        return wrap;
-      }
+      content: buildContent
     });
   }
-
 
   openDeleteConfirm(el) {
     const id = this.ticket.id;
     const title = this.ticket.title;
+
+    const modal = this?.opts?.modal;
+    if (modal && typeof modal.open === 'function') {
+      const wrap = document.createElement('div');
+      wrap.innerHTML = `
+          <div style="display:grid; gap:12px;">
+            <p>Êtes-vous sûr de vouloir supprimer «\u00A0${escapeHtml(String(title))}\u00A0» ?</p>
+            <p style="color: var(--kanban-muted); font-size: 12px;">Cette action est irréversible.</p>
+          </div>
+        `;
+
+      const footer = document.createElement('div');
+      footer.innerHTML = `
+              <button class="btn" data-cancel>Annuler</button>
+              <button class="btn btn-danger" data-confirm>Supprimer</button>
+            `;
+
+      const handle = modal.open({ title: 'Supprimer ce ticket ?', body: wrap, footer });
+      footer.querySelector('[data-cancel]')?.addEventListener('click', () => handle.close());
+      footer.querySelector('[data-confirm]')?.addEventListener('click', async () => {
+        try {
+          await this.onRemove?.(id, el, this.ticket);
+        } finally {
+          handle.close();
+        }
+      });
+      return;
+    }
+
     this.popup.open({
       title: 'Supprimer ce ticket ?',
       content: () => {
