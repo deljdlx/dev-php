@@ -45,6 +45,7 @@ class TicketCard {
     this.board = board;
     this.state = board.getState();
     this.popup = board.popup;
+    this.opts = opts;
 
 
     const tx = sanitizeTaxonomies(ticket?.taxonomies || legacyToTaxonomies(ticket || {}), opts.allowedMap);
@@ -120,6 +121,41 @@ class TicketCard {
   }
 
 
+  openDeleteConfirm(el) {
+    const id = this.ticket.id;
+    const title = this.ticket.title;
+    this.popup.open({
+      title: 'Supprimer ce ticket ?',
+      content: () => {
+        const wrap = document.createElement('div');
+        wrap.innerHTML = `
+          <div style="display:grid; gap:12px;">
+            <p>Êtes-vous sûr de vouloir supprimer «\u00A0${escapeHtml(String(title))}\u00A0» ?</p>
+            <p style="color: var(--kanban-muted); font-size: 12px;">Cette action est irréversible.</p>
+            <div style="display:flex; gap:8px; justify-content:flex-end;">
+              <button class="btn" data-cancel>Annuler</button>
+              <button class="btn btn-danger" data-confirm>Supprimer</button>
+            </div>
+          </div>
+        `;
+        setTimeout(() => {
+          const cancel = wrap.querySelector('[data-cancel]');
+          const confirm = wrap.querySelector('[data-confirm]');
+          cancel?.addEventListener('click', () => this.popup.close());
+          confirm?.addEventListener('click', async () => {
+            try {
+              await this.onRemove?.(id, el, this.ticket);
+            } finally {
+              this.popup.close();
+            }
+          });
+        });
+        return wrap;
+      }
+    });
+  }
+
+
 
 
   /** Create and return the DOM element for the ticket card */
@@ -168,6 +204,9 @@ class TicketCard {
 
     el.innerHTML = `
       <div class="card-title">${escapeHtml(this.ticket.title)}</div>
+      <div class="card-actions">
+        <button type="button" class="btn btn-icon btn-danger card-delete" aria-label="Supprimer" title="Supprimer">🗑</button>
+      </div>
       ${descHtml}
       <div class="card-meta">
     <span>${formatTicketDate(this.ticket.createdAt)}</span>
@@ -177,6 +216,8 @@ class TicketCard {
     `;
 
     el.addEventListener('click', () => this.onClick?.(this.ticket.id, el, this.ticket));
+    const delBtn = el.querySelector('.card-delete');
+    delBtn?.addEventListener('click', (e) => { e.stopPropagation(); this.openDeleteConfirm(el); });
 
     return el;
   }

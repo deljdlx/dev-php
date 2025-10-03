@@ -147,6 +147,13 @@ body {
 #kanban .complexity { padding: 2px 6px; border-radius: 6px; font-size: 11px; font-weight: 700; letter-spacing:.25px; opacity:.9; background: #1f2937; color: #e2e8f0; border:1px solid var(--kanban-btn-border); }
 #kanban .complexity.complexity-xs { opacity: .7; }
 
+#kanban .card { position: relative; }
+#kanban .card-actions { position: absolute; top: 6px; right: 6px; display:flex; gap:6px; opacity: 0.0; transition: opacity .12s ease; }
+#kanban .card:hover .card-actions, #kanban .card:focus-within .card-actions { opacity: 1; }
+#kanban .btn-icon { padding: 4px 6px; line-height: 1; font-size: 14px; border-radius: 6px; }
+#kanban .btn-danger { background: #7f1d1d; border-color: #b91c1c; color: #fecaca; }
+#kanban .btn-danger:hover { background: #991b1b; }
+
 #kanban .label { padding: 2px 6px; border-radius: 6px; font-size: 11px; font-weight: 700; letter-spacing:.25px; opacity:.9; }
 #kanban .label.blue { background: var(--kanban-label-blue); color: #fff; }
 #kanban .label.green { background: var(--kanban-label-green); color: #fff; }
@@ -220,6 +227,10 @@ body {
 
 #kanban[data-theme="light"] .taxo-chip,
 [data-theme="light"] #kanban .taxo-chip { background: rgba(0,0,0,0.06); border-color: rgba(0,0,0,0.12); }
+
+/* Generic danger button (used in confirm dialogs) */
+.btn-danger { background: #7f1d1d; border-color: #b91c1c; color: #fecaca; }
+.btn-danger:hover { background: #991b1b; }
 
 /* Example styling hints for dynamically added taxonomies (optional) */
 #kanban .taxo-priority-high { background:#ffe0e0; color:#b40000; border-color:#ffb3b3; }

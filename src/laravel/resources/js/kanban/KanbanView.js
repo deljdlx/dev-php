@@ -109,6 +109,15 @@ export class KanbanView {
       authors: Array.isArray(this.state.board?.authors) ? this.state.board.authors : [],
       onClick: (id, el, data) => {
         this.onClick(id, el, data);
+      },
+      onRemove: async (id, el) => {
+        try {
+          await this.state.removeTicket(id);
+          el?.remove();
+          this.updateCounts();
+        } catch (e) {
+          this.logger?.debug?.('removeTicket.error', e);
+        }
       }
     }).render();
   }

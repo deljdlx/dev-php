@@ -224,6 +224,19 @@ class KanbanState {
         await this.persist({ op: 'moveTicket', ticketId, toColumnId, toIndex });
     }
 
+    async removeTicket(ticketId) {
+        if (!ticketId) return;
+        this.logger?.debug?.('state.removeTicket()', { ticketId });
+        for (const col of this.columns) {
+            const idx = col.tickets.findIndex(t => t.id === ticketId);
+            if (idx !== -1) {
+                const [removed] = col.tickets.splice(idx, 1);
+                await this.persist({ op: 'removeTicket', ticketId, columnId: col.id, ticket: (typeof removed?.toJSON === 'function' ? removed.toJSON() : removed) });
+                return;
+            }
+        }
+    }
+
     async addTicket(columnId, ticket) {
         if (!columnId) return;
         this.logger?.debug?.('state.addTicket()', { columnId, ticket });
