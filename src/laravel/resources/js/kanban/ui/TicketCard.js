@@ -114,7 +114,17 @@ class TicketCard {
                         <div class=\"ticket-field ticket-description\">\n                                        <span class=\"field-label\">Description:</span>\n                                        <div class=\"field-value\">${escapeHtml(String(data.description))}</div>\n                                    </div>
                     ` : ''}
                 </div>
+                <div class=\"tf-actions\" style=\"margin-top: 8px;\">
+                  <button type=\"button\" class=\"btn btn-danger\" data-delete>Supprimer</button>
+                </div>
             `;
+        setTimeout(() => {
+          const del = wrap.querySelector('[data-delete]');
+          del?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.openDeleteConfirm(el);
+          });
+        });
         return wrap;
       }
     });

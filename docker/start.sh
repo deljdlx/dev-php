@@ -32,10 +32,6 @@ if command -v php-fpm8.3 >/dev/null 2>&1; then
   php-fpm8.3 -D
 fi
 
-
-
-
-
 # Show sockets
 ls -l /run/php || true
 

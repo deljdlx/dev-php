@@ -21,7 +21,7 @@ function demoFactory() {
     { id: 'u-david', name: 'David' },
   ];
   const board = {
-    name: 'Kanban demo',
+    name: 'My Super Kanban demo',
     authors,
     taxonomies: {
       label: { label: 'Couleur', options: [
