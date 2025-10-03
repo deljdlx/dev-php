@@ -1,16 +1,27 @@
 import 'tabulator-tables/dist/css/tabulator_bootstrap5.min.css';
 import { TabulatorFull as Tabulator } from 'tabulator-tables';
 
-// MDB UI Kit (CSS + ALL components)
-import 'mdb-ui-kit/css/mdb.min.css';
-import * as mdb from 'mdb-ui-kit';
 
-// Initialize all MDB components at once
-document.addEventListener('DOMContentLoaded', () => {
-    if (typeof mdb.initMDB === 'function') {
-        mdb.initMDB(mdb);
-    }
-});
+// resources/js/app.js
+import '@tabler/core/dist/js/tabler.min.js';
+
+// resources/css/app.css
+import "@tabler/core/dist/css/tabler.min.css";
+import "@tabler/core/dist/css/tabler-vendors.min.css"; /* si tu veux les vendors (datepicker, etc.) */
+// Font Awesome (installed via npm) – used in the sandbox navbar examples
+import "@fortawesome/fontawesome-free/css/all.min.css";
+
+
+// MDB UI Kit (CSS + ALL components)
+// import 'mdb-ui-kit/css/mdb.min.css';
+// import * as mdb from 'mdb-ui-kit';
+
+// // Initialize all MDB components at once
+// document.addEventListener('DOMContentLoaded', () => {
+//     if (typeof mdb.initMDB === 'function') {
+//         mdb.initMDB(mdb);
+//     }
+// });
 
 
 // Optionally include custom overrides if present

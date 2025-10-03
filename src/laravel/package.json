@@ -20,8 +20,9 @@
         "vitest": "^2.1.1"
     },
     "dependencies": {
+        "@fortawesome/fontawesome-free": "^7.1.0",
+        "@tabler/core": "^1.4.0",
         "bootstrap": "^5.3.8",
-        "mdb-ui-kit": "^7.3.2",
         "sortablejs": "^1.15.2",
         "tabulator-tables": "^6.3.1"
     }
