@@ -3,6 +3,11 @@ import { BoardMetaNormalizer } from './BoardMetaNormalizer';
 import { SeedProvider } from './SeedProvider';
 import { ColumnSerializer } from './Serializers';
 
+/**
+ * DemoRepository: gère le snapshot local (seed + lecture/écriture + normalisation board).
+ * Il ne parle pas au DOM ni à l’UI; il manipule des objets simples et DTO.
+ */
+
 export class DemoRepository {
   constructor({ storage, storageKey, logger, factoryOrConfig }) {
     this.logger = logger;

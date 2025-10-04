@@ -13,6 +13,12 @@
 - Documenter le code avec des docblocks pour que des développeurs juniors puissent comprendre
 - Toujours typer les arguments et les retours de fonctions/méthodes
 
+## Consignes générales
+- Supprimer tout code mort
+
 ## Consignes PHP
 - Toujours utiliser les bonnes pratiques de Laravel 12 et PHP 8.3
 - Toujours tester avec phpstan niveau 10
+
+
+## Consignes JS

@@ -1,6 +1,17 @@
 import Column from '../models/Column';
 import { DemoRepository } from './DemoRepository';
 
+/**
+ * DemoDataSourceAdapter — façade DataSource utilisée par KanbanState.
+ * Contrat public:
+ *  - getBoardMeta(): Promise<BoardMeta>
+ *  - setBoardMeta(board): Promise<void>
+ *  - getColumnsMeta(): Promise<Array<{ id: string, name: string }>>
+ *  - getTicketsByColumnId(columnId: string): Promise<any[]>
+ *  - getColumns(): Promise<Column[]> (héritage: retourne des modèles)
+ *  - save(columns: Column[]|DTO[]): Promise<void>
+ */
+
 // Keeps public API compatible with existing callers
 export class DemoDataSourceAdapter {
   constructor(factoryOrConfig, storageKey = 'demo.kanban.v1', logger = null, storage) {

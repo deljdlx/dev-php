@@ -1,4 +1,5 @@
 // SnapshotStore: read/write JSON snapshots to a storage under a key
+// storage attendu: { getItem(key): string|null, setItem(key, value): void }
 
 export class SnapshotStore {
   constructor(storage, key, logger) {

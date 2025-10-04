@@ -1,4 +1,5 @@
 // BoardMetaNormalizer: normalizes board metadata (taxonomies, authors, name, backgroundImage)
+// Entrée flexible -> Sortie standardisée { taxonomies: { key: {label, options[]} }, authors[] }
 
 function warn(msg, extra) {
   try { console.warn('[Kanban config]', msg, extra ?? ''); } catch {}
