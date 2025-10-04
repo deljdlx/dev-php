@@ -1,7 +1,6 @@
 import Sortable from 'sortablejs';
 import TicketCard from './ui/TicketCard';
 import Popup from './ui/Popup';
-import escapeHtml from './utils/escapeHtml';
 import openCreateTicketPopup from './ui/createTicket';
 
 /** @typedef {import('./models/KanbanState').default} KanbanState */

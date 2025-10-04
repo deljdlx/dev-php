@@ -89,15 +89,7 @@ class TicketCard {
   }
 
 
-  /**
-   * Construit le HTML pour un chip de taxonomie (ex: label/category/complexity)
-   * @param {string} key
-   * @param {string|null|undefined} valKey
-   * @returns {string}
-   */
-  buildTaxoField(key, valKey) {
-    return renderTaxonomyChip(key, valKey, this.getTaxonomyMeta?.(key));
-  }
+  // note: rendering of taxonomy chips is centralized in components/TaxonomyChip.js used directly in render()
 
   /**
    * @param {string} key
@@ -122,7 +114,7 @@ class TicketCard {
     console.log('id', id);
     console.groupEnd();
 
-    this.logger?.debug('ticket.click', { id });
+  // logging delegated to board/logger if needed
 
     const modal = this?.opts?.modal;
     const buildContent = () => {
