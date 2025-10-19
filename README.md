@@ -1,3 +1,4 @@
 # Php dev container
 
-Requires dev-base container
+Requires [https://github.com/STIMDATA/devenv-base](devenv-base)
+
